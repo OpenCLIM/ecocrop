@@ -9,22 +9,22 @@ Overview
 
 Tool that calculates how suitable given climate data is for various crops, using the FAO EcoCrop database of crop parameters.
 The tool uses the following parameters from the EcoCrop database for the climate suitability calculation:
-TOPMN,optimal minimum temperature
-TOPMX,optimal maximum temperature
-TMIN,absolute minimum temperature
-TMAX,absolute maximum temperature
-KTMPR,Killing temperature during rest
-KTMP,Killing temperature early growth
-ROPMN,optimal minimum rainfall
-ROPMX,optimal maximum rainfall
-RMIN,absolute minimum rainfall
-RMAX,absolute maximum rainfall
-GMIN,Minimum crop cycle,the minimum number of 'growing days' the crop needs
-GMAX,Maximum crop cycle,the maximum length of time the crop can grow in
+- TOPMN,optimal minimum temperature
+- TOPMX,optimal maximum temperature
+- TMIN,absolute minimum temperature
+- TMAX,absolute maximum temperature
+- KTMPR,Killing temperature during rest
+- KTMP,Killing temperature early growth
+- ROPMN,optimal minimum rainfall
+- ROPMX,optimal maximum rainfall
+- RMIN,absolute minimum rainfall
+- RMAX,absolute maximum rainfall
+- GMIN,Minimum crop cycle,the minimum number of 'growing days' the crop needs
+- GMAX,Maximum crop cycle,the maximum length of time the crop can grow in
 
 The following parameters are used, optionally, for additional masking of suitable locations for crop growth:
-TEXT,Optimal soil texture
-TEXTR,Absolute soil texture
+- TEXT,Optimal soil texture
+- TEXTR,Absolute soil texture
 
 A suitability score out of 100 is calculated for temperature and precip separately, with the combined score the lower of these.
 
@@ -41,7 +41,9 @@ Temperature suitability is calculated using the following metrics:
 - NKMAXDAYS: A forward-rolling total of the number of days the maximum temperature is above TMAX, with window-size GTIME. The number of heat-stress days.
 
 For each GTIME, the temperature suitability score is calculated as:
+
 100*(1-(GTIME-GMIN)/(GMAX-GMIN)) - NKMAXDAYS
+
 only where NOPTDAYS >= GMIN, otherwise it is 0.
 The closer GTIME is to GMIN, the higher the score.
 The suitability is also set to zero if NKTMPDAYS > 0
@@ -52,11 +54,11 @@ In essence, in the absence of frost or heat stress, the quicker a crop is able t
 Precipitation suitability is calculated using the forward-rolling total of precipitation (PGTIME) for each GTIME window-size
 The score is calculated as:
 
-$$\frac{100}{PMINO-PMIN}\left(P-PMIN\right), \:\text{for}\: PMIN<=P<PMINO$$
+(100/(PMINO-PMIN))(P-PMIN) for PMIN<=P<PMINO
 
-$$100, \:\text{for}\: PMINO<=P<=PMAXO$$
+100 for PMINO<=P<=PMAXO
 
-$$\frac{100}{PMAX-PMAXO}\left(PMAX-P\right), \:\text{for}\: PMAXO<P<=PMAX$$
+(100/(PMAX-PMAXO))(PMAX-P) for PMAXO<P<=PMAX
 
 As with temperature, the maximum over all the GTIME calculations is taken. 
 
