@@ -54,11 +54,11 @@ In essence, in the absence of frost or heat stress, the quicker a crop is able t
 Precipitation suitability is calculated using the forward-rolling total of precipitation (P) for each GTIME window-size
 The score is calculated as:
 
-(100/(PMINO-PMIN))(P-PMIN) for PMIN<=P<PMINO
+(100/(PMINO-PMIN))*(P-PMIN) for PMIN<=P<PMINO
 
 100 for PMINO<=P<=PMAXO
 
-(100/(PMAX-PMAXO))(PMAX-P) for PMAXO<P<=PMAX
+(100/(PMAX-PMAXO))*(PMAX-P) for PMAXO<P<=PMAX
 
 As with temperature, the maximum over all the GTIME calculations is taken. 
 
