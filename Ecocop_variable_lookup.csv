@@ -1,0 +1,54 @@
+Variable,Explanation
+AUTH,Authority
+FAMNAME,Family
+SYNO,Synonyms
+COMNAME,Common names
+LIFO,Life form
+HABI,Habitat
+LISPA,Life span
+PHYS,Physiology
+CAT,Category
+PLAT,Plant attributes
+TOPMN,optimal minimum temperature
+TOPMX,optimal maximum temperature
+TMIN,absolute minimum temperature
+TMAX,absolute maximum temperature
+ROPMN,optimal minimum rainfall
+ROPMX,optimal maximum rainfall
+RMIN,absolute minimum rainfall
+RMAX,absolute maximum rainfall
+PHOPMN,optimal minimum soil PH
+PHOPMX,optimal maximum soil PH
+PHMIN,absolute minimum soil PH
+PHMAX,absolute maximum soil PH
+LATOPMN,optimal minimum latitude
+LATOPMX,optimal maximum latitude
+LATMN,absolute minimum latitude
+LATMX,absolute maximum latitude
+ALTMX,absolute maximum altitude
+LIOPMN,optimal minimum light intensity
+LIOPMX,optimal maximum light intensity
+LIMN,absolute minimum light intensity
+LIMX,absolute maximum light intensity
+DEP,Optimal soil depth
+DEPR,Absolute soil depth
+TEXT,Optimal soil texture
+TEXTR,Absolute soil texture
+FER,Optimal soil fertility
+FERR,Absolute soil fertility
+TOX,Optimal soil aluminium toxicity
+TOXR,Absolute soil aluminium toxicity
+SAL,Optimal soil salinity
+SALR,Absolute soil salinity
+DRA,Optimal soil drainage
+DRAR,Absolute soil drainage
+KTMPR,Killing temperature during rest
+KTMP,Killing temperature early growth
+PHOTO,Photoperiod
+CLIZ,Climate zone
+ABITOL,Abiotic tolerance
+ABISUS,Abiotic susceptibility
+INTRI,Introduction risk
+PROSY,Production system
+GMIN,Minimum crop cycle
+GMAX,Maximum crop cycle
