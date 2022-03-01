@@ -51,7 +51,7 @@ The suitability is also set to zero if NKTMPDAYS > 0
 Once this has been calculated for all GTIMEs, the maximum is taken as the final temperature suitability score.
 In essence, in the absence of frost or heat stress, the quicker a crop is able to amass the required (GMIN) days, the higher it's score.
 
-Precipitation suitability is calculated using the forward-rolling total of precipitation (PGTIME) for each GTIME window-size
+Precipitation suitability is calculated using the forward-rolling total of precipitation (P) for each GTIME window-size
 The score is calculated as:
 
 (100/(PMINO-PMIN))(P-PMIN) for PMIN<=P<PMINO
@@ -80,6 +80,6 @@ Running instructions
 - The tool is designed to run on a HPC due to the high memory requirements (approximately 1.5x the disk size of the meteorological data, ~500GB for the UK at 1km resolution for 60years of daily data)
 - An example of a SLURM job submit script is provided as ecocrop_lotus_himem.sbatch
 - This runs the python script ecocrop_lotus_himem.py
-- Edit the variables at the top of the script before running.
+- Edit the variables at the top of the python script before running
 
 
