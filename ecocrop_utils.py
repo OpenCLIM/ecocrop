@@ -144,12 +144,14 @@ def calc_decadal_changes(allscore, tempscore, precscore, SOIL, LCMloc, sgmloc, c
     return allscore_decadal_changes, tempscore_decadal_changes, precscore_decadal_changes
 
 
-def plot_decadal_changes(dcdata, save=None):
-
-    cmax = np.ceil(dcdata.max().values)
-    #print(cmax)
-    cmin = np.floor(dcdata.min().values)
-    #print(cmin)
+def plot_decadal_changes(dcdata, save=None, cmin=None, cmax=None):
+    
+    if not cmax:
+        cmax = np.ceil(dcdata.max().values)
+        #print(cmax)
+    if not cmin:
+        cmin = np.floor(dcdata.min().values)
+        #print(cmin)
     if abs(cmax) > abs(cmin):
         cmin = -1*cmax
     else:

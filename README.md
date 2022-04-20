@@ -78,7 +78,8 @@ Running instructions
 --------------------
 
 - The tool is designed to run on a HPC due to the high memory requirements (approximately 1.5x the disk size of the meteorological data, ~500GB for the UK at 1km resolution for 60years of daily data)
-- An example of a SLURM job submit script is provided as ecocrop_lotus_himem.sbatch
+- An example of a SLURM job submit script is provided as ecocrop_lotus_himem_template.sbatch
+- Replace the 'cropind' text with the spreadsheet row number (0-based, ignoring header row) of the spreadsheet specified by the variable 'ecocroploc' in the main python script
 - This runs the python script ecocrop_lotus_himem.py
 - Edit the variables at the top of the python script before running
 

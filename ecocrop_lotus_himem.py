@@ -24,11 +24,11 @@ savedir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/scores'
 lcmloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/LCM15_Arable_Mask.tif'
 bgsloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/BGS_soildata/masks'
 plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots'
-cropname = 'wheat'
 
 ecocropall = pd.read_csv(ecocroploc, engine='python')
 ecocrop = ecocropall.drop(['level_0'], axis=1)
-testcrop = ecocrop.iloc[117,:] # 19 onions, #117 wheat, #147 chickpea, #66 sweet potato
+cropind = int(sys.argv[1])
+testcrop = ecocrop.iloc[cropind,:] # 19 onions, #117 wheat, #147 chickpea, #66 sweet potato
 TOPMIN = testcrop['TOPMN'] + 273.15 # C-->K
 TOPMAX = testcrop['TOPMX'] + 273.15 # C-->K
 PMIN = testcrop['RMIN']/86400. # mm-->kg/m^2/s
@@ -41,6 +41,14 @@ GMIN = int(testcrop['GMIN'])
 GMAX = int(testcrop['GMAX'])
 SOIL = testcrop['TEXT']
 COMNAME = testcrop['COMNAME']
+COMNAME = '_'.join(COMNAME.split(',')[0].split(' '))
+if '(' in COMNAME:
+    COMNAME = ''.join(COMNAME.split('('))
+    COMNAME = ''.join(COMNAME.split(')'))
+if "'" in COMNAME:
+    COMNAME = ''.join(COMNAME.split("'"))
+cropname = COMNAME
+
 # assume killing temp of -1 if not specified
 if np.isnan(KTMP):
     KTMP=-1
@@ -160,7 +168,7 @@ counter=1
 GMIN = np.uint16(GMIN)
 GMAX = np.uint16(GMAX)
 for gtime in allgtimes:
-    print('Calculating suitability for ' + COMNAME + \
+    print('Calculating suitability for ' + cropname + \
           ' for a growing season of length ' + str(gtime) + \
           ' out of a maximum of ' + str(int(GMAX)))
 
@@ -309,5 +317,5 @@ precscore.to_netcdf(os.path.join(savedir, cropname + '_prec.nc'), encoding=encod
 allscore_decadal_changes, tempscore_decadal_changes, precscore_decadal_changes = \
 calc_decadal_changes(final_score_crop, tempscore, precscore, str(SOIL), lcmloc, bgsloc, cropname, savedir)
 plot_decadal_changes(allscore_decadal_changes, save='plots/' + cropname + '_decadal_changes.png')
-plot_decadal_changes(tempscore_decadal_changes, save='plots/' + cropname + 'tempscore_decadal_changes.png')
-plot_decadal_changes(precscore_decadal_changes, save='plots/' + cropname + 'precscore_decadal_changes.png')
+plot_decadal_changes(tempscore_decadal_changes, save='plots/' + cropname + '_tempscore_decadal_changes.png')
+plot_decadal_changes(precscore_decadal_changes, save='plots/' + cropname + '_precscore_decadal_changes.png')
