@@ -28,6 +28,7 @@ plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots'
 ecocropall = pd.read_csv(ecocroploc, engine='python')
 ecocrop = ecocropall.drop(['level_0'], axis=1)
 cropind = int(sys.argv[1])
+print('Cropind: ' + str(cropind))
 testcrop = ecocrop.iloc[cropind,:] # 19 onions, #117 wheat, #147 chickpea, #66 sweet potato
 TOPMIN = testcrop['TOPMN'] + 273.15 # C-->K
 TOPMAX = testcrop['TOPMX'] + 273.15 # C-->K
@@ -37,8 +38,8 @@ POPMIN = testcrop['ROPMN']/86400. # mm-->kg/m^2/s
 POPMAX = testcrop['ROPMX']/86400. # mm-->kg/m^2/s
 KTMP = testcrop['KTMPR'] + 273.15 # C-->K
 KMAX = testcrop['TMAX'] + 273.15  # C-->K
-GMIN = int(testcrop['GMIN'])
-GMAX = int(testcrop['GMAX'])
+GMIN = testcrop['GMIN']
+GMAX = testcrop['GMAX']
 SOIL = testcrop['TEXT']
 COMNAME = testcrop['COMNAME']
 COMNAME = '_'.join(COMNAME.split(',')[0].split(' '))
@@ -49,10 +50,36 @@ if "'" in COMNAME:
     COMNAME = ''.join(COMNAME.split("'"))
 cropname = COMNAME
 
+# Check for missing data
+if np.isnan(testcrop['TOPMN']):
+    raise ValueError('Missing TOPMN')
+if np.isnan(testcrop['TOPMX']):
+    raise ValueError('Missing TOPMX')
+if np.isnan(testcrop['TMAX']):
+    raise ValueError('Missing TMAX (KMAX)')
+if np.isnan(testcrop['RMIN']):
+    raise ValueError('Missing RMIN')
+if np.isnan(testcrop['RMAX']):
+    raise ValueError('Missing RMAX')
+if np.isnan(testcrop['ROPMN']):
+    raise ValueError('Missing ROPMN')
+if np.isnan(testcrop['ROPMX']):
+    raise ValueError('Missing ROPMX')
+if np.isnan(testcrop['GMIN']):
+    raise ValueError('Missing GMIN')
+if np.isnan(testcrop['GMAX']):
+    raise ValueError('Missing GMAX')
+
+# exit if GMIN=GMAX, assume missing data
+if GMAX-GMIN<=10:
+    raise ValueError('GMIN and GMAX too close, not enough info to calculate suitability')
+
 # assume killing temp of -1 if not specified
 if np.isnan(KTMP):
     KTMP=-1
 
+GMIN = int(GMIN)
+GMAX = int(GMAX)
 print('TOPMN: ' + str(testcrop['TOPMN']))
 print('TOPMX: ' + str(testcrop['TOPMX']))
 print('KTMP: ' + str(testcrop['KTMPR']))
@@ -91,9 +118,13 @@ topt_crop = xr.where(xr.ufuncs.logical_and(tas < TOPMAX, tas > TOPMIN), 1, 0).as
 ktmp_crop = xr.where(tmn < KTMP, 1, 0).astype('uint16').values
 kmax_crop = xr.where(tmx > KMAX, 1, 0).astype('uint16').values
 
-gstart = np.int16(np.ceil(GMIN/10)*10)
+if GMAX-GMIN<=15:
+    gstart = np.int16(np.floor(GMIN/10)*10)
+else:
+    gstart = np.int16(np.ceil(GMIN/10)*10)
 gend   = np.int16(np.ceil(GMAX/10)*10)
 allgtimes = list(np.arange(gstart, gend, 10, dtype='int16'))
+
 
 # First check if any files are missing or corrupted and skip those gtimes
 #allfilescounter=0
