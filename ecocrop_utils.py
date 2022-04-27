@@ -238,7 +238,7 @@ def score_temp(gtime, gmin, gmax):
 #            (100/(popmin-pmin))*(total-pmin)))
 #    return score.round()
 
-def score_prec(total, pmin, pmax, popmin, popmax):
+def score_prec1(total, pmin, pmax, popmin, popmax):
     pmin=pmin.astype('float32')
     pmax=pmax.astype('float32')
     popmin=popmin.astype('float32')
@@ -247,6 +247,28 @@ def score_prec(total, pmin, pmax, popmin, popmax):
             xr.where(total > popmax, (100/(pmax-popmax))*(pmax-total), \
             xr.where(total > popmin, 100, \
             xr.where(total > pmin, (100/(popmin-pmin))*(total-pmin), 0))))
+    return score.round().astype('uint8')
+
+def score_prec2(total, pmin, pmax, popmin, popmax):
+    pmin=pmin.astype('float32')
+    pmax=pmax.astype('float32')
+    popmin=popmin.astype('float32')
+    popmax=popmax.astype('float32')
+    score = xr.where(total > pmax, 0, \
+            xr.where(total > 0.5*(popmax+popmin), (200/(2*pmax-popmin-popmax))*(pmax-total), \
+            xr.where(total > pmin, (200/(popmin+popmax-2*pmin))*(total-pmin), 0))))
+    return score.round().astype('uint8')
+
+def score_prec3(total, pmin, pmax, popmin, popmax):
+    pmin=pmin.astype('float32')
+    pmax=pmax.astype('float32')
+    popmin=popmin.astype('float32')
+    popmax=popmax.astype('float32')
+    score = xr.where(total > pmax, 0, \
+            xr.where(total > popmax, 50*((popmax-total)/(pmax-popmax) + 1), \
+            xr.where(total > 0.5*(popmax+popmin), 50*((2*(popmax-total))/(popmax-popmin) + 1), \
+            xr.where(total > popmin, 50*((2*(total-popmin))/(popmax-popmin) + 1), \
+            xr.where(total > pmin, 50*((total-popmin)/(popmin-pmin) + 1), 0)))))
     return score.round().astype('uint8')
 
 

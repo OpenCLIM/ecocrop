@@ -24,6 +24,7 @@ savedir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/scores'
 lcmloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/LCM15_Arable_Mask.tif'
 bgsloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/BGS_soildata/masks'
 plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots'
+precmethod = 1 # which precip score method to use (see utils.py for funcs)
 
 ecocropall = pd.read_csv(ecocroploc, engine='python')
 ecocrop = ecocropall.drop(['level_0'], axis=1)
@@ -281,7 +282,14 @@ for gtime in allgtimes:
     #print('Loading prec file')
     #precip_crop = xr.open_dataset(precpath)['PRECtotal'].astype('float16')
     print('Calculating precip suitability score')
-    precscore = score_prec(precip_crop, PMIN, PMAX, POPMIN, POPMAX)
+    if precmethod==1:
+        precscore = score_prec1(precip_crop, PMIN, PMAX, POPMIN, POPMAX)
+    elif precmethod==2:
+        precscore = score_prec2(precip_crop, PMIN, PMAX, POPMIN, POPMAX)
+    elif precmethod==3:
+        precscore = score_prec3(precip_crop, PMIN, PMAX, POPMIN, POPMAX)
+    else:
+        raise ValueError('precmethod must be 1, 2 or 3. Currently set as ' + str(precmethod))
 
     print('Merging T & P suitability scores')
     if counter==1:
