@@ -256,7 +256,7 @@ def score_prec2(total, pmin, pmax, popmin, popmax):
     popmax=popmax.astype('float32')
     score = xr.where(total > pmax, 0, \
             xr.where(total > 0.5*(popmax+popmin), (200/(2*pmax-popmin-popmax))*(pmax-total), \
-            xr.where(total > pmin, (200/(popmin+popmax-2*pmin))*(total-pmin), 0))))
+            xr.where(total > pmin, (200/(popmin+popmax-2*pmin))*(total-pmin), 0)))
     return score.round().astype('uint8')
 
 def score_prec3(total, pmin, pmax, popmin, popmax):
