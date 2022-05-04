@@ -293,13 +293,14 @@ for gtime in allgtimes:
 
     print('Merging T & P suitability scores')
     if counter==1:
-        final_score_crop_old = xr.where(precscore < tempscore, precscore, tempscore)
+        final_score_crop_old = (precscore + tempscore)/2
+        print(final_score_crop.dtype)
         tempscore_old = tempscore
         precscore_old = precscore
         #print(final_score_crop_old.dtype)
         #print(final_score_crop_old.shape)
     else:
-        final_score_crop = xr.where(precscore < tempscore, precscore, tempscore)
+        final_score_crop = (precscore + tempscore)/2
         print(final_score_crop.dtype)
         if len(final_score_crop_old['time']) > len(final_score_crop['time']):
             final_score_crop_old = final_score_crop_old.sel(time=slice(final_score_crop['time'][0], final_score_crop['time'][-1]))
