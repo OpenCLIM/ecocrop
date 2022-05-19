@@ -7,6 +7,39 @@ from numba import njit
 import geopandas as gpd
 import matplotlib.pyplot as plt
 
+def circular_avg(maxdoys, dim):
+    '''
+    Function to calculate the average on a circular domain 0-360, 
+    e.g. for calculating the average day of year. Process is:
+    - Convert to radians
+    - Calculate the sine of a given year's 'angles' and store it
+    - Calculate the cosine of the same year's 'angles' and store it
+    - Repeat for all the years in a given average
+    - Sum up the sines and cosines separately
+    - Calculate the arctan of these element-wise
+    - Convert back to 'degrees' (i.e. days of year)
+    as defined at https://en.wikipedia.org/wiki/Circular_mean
+    '''
+    maxdoys_rad = np.deg2rad(maxdoys)
+
+    maxdoys_sin = np.sin(maxdoys_rad)
+    maxdoys_cos = np.cos(maxdoys_rad)
+
+    maxdoys_sinsum = maxdoys_sin.sum(dim)/len(maxdoys[dim])
+    maxdoys_cossum = maxdoys_cos.sum(dim)/len(maxdoys[dim])
+
+    maxdoys_radavg = xr.where(xr.ufuncs.logical_and(maxdoys_sinsum>0, maxdoys_cossum>0), 
+                              xr.ufuncs.arctan(maxdoys_sinsum/maxdoys_cossum),
+                              xr.where(xr.ufuncs.logical_and(maxdoys_sinsum<0, maxdoys_cossum>0),
+                              xr.ufuncs.arctan(maxdoys_sinsum/maxdoys_cossum)+(2*np.pi),
+                              xr.where(maxdoys_cossum<0,
+                              xr.ufuncs.arctan(maxdoys_sinsum/maxdoys_cossum)+np.pi,
+                              0)))
+
+    maxdoys_avg = np.rad2deg(maxdoys_radavg)
+    
+    return maxdoys_avg
+
 # Mask out non-growing regions using a version of the land-
 # cover map supplied by John Redhead
 def lcm_mask(lcm, data):
@@ -62,6 +95,39 @@ def soil_type_mask_all(data, SOIL, maskloc):
         data = soil_type_mask(maskfile, data)
 
     return data
+
+def calculate_max_doy(allscore, tempscore, precscore):
+    '''
+    Return the day of year of the maximum score for allscore, tempscore, precscore
+    '''
+    maxdoys = []
+    for yr, yrdata in allscore.groupby('time.year'):
+        print('Calculating doy of max score for year ' + str(yr))
+        maxdoy = yrdata.idxmax('time').dt.dayofyear.expand_dims({'year': [yr]})
+        maxdoy = maxdoy.where(maxdoy>1)
+        maxdoys.append(maxdoy)
+    maxdoys = maxdoys[:-1]
+    maxdoys = xr.concat(maxdoys, dim='year')
+
+    maxdoys_temp = []
+    for yr, yrdata in tempscore.groupby('time.year'):
+        print('Calculating doy of max temp score for year ' + str(yr))
+        maxdoy = yrdata.idxmax('time').dt.dayofyear.expand_dims({'year': [yr]})
+        maxdoy = maxdoy.where(maxdoy>1)
+        maxdoys_temp.append(maxdoy)
+    maxdoys_temp = maxdoys_temp[:-1]
+    maxdoys_temp = xr.concat(maxdoys_temp, dim='year')
+
+    maxdoys_prec = []
+    for yr, yrdata in precscore.groupby('time.year'):
+        print('Calculating doy of max prec score for year ' + str(yr))
+        maxdoy = yrdata.idxmax('time').dt.dayofyear.expand_dims({'year': [yr]})
+        maxdoy = maxdoy.where(maxdoy>1)
+        maxdoys_prec.append(maxdoy)
+    maxdoys_prec = maxdoys_prec[:-1]
+    maxdoys_prec = xr.concat(maxdoys_prec, dim='year')
+    
+    return maxdoys, maxdoys_temp, maxdoys_prec
 
 
 def calc_decadal_changes(allscore, tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, outdir):
@@ -143,6 +209,130 @@ def calc_decadal_changes(allscore, tempscore, precscore, SOIL, LCMloc, sgmloc, c
 
     return allscore_decadal_changes, tempscore_decadal_changes, precscore_decadal_changes
 
+def calc_decadal_doy_changes(maxdoys, maxdoys_temp, maxdoys_prec, SOIL, LCMloc, sgmloc, cropname, outdir):
+    '''
+    Calculate decadal changes in the 'day of year of the maximum score' metric, 
+    using circular averaging 
+    '''
+
+    # mask land-cover and soil
+    lcm = xr.open_rasterio(LCMloc)
+    lcm = lcm.drop('band').squeeze()
+    lcm=lcm[::-1,:]
+    maxdoys      = lcm_mask(lcm, maxdoys)
+    maxdoys_temp = lcm_mask(lcm, maxdoys_temp)
+    maxdoys_prec = lcm_mask(lcm, maxdoys_prec)
+    maxdoys       = soil_type_mask_all(maxdoys,  SOIL, sgmloc)
+    maxdoys_temp  = soil_type_mask_all(maxdoys_temp,  SOIL, sgmloc)
+    maxdoys_prec  = soil_type_mask_all(maxdoys_prec,  SOIL, sgmloc)
+    # save to disk
+    maxdoys.to_netcdf(os.path.join(outdir, cropname + '_max_score_doys.nc'))
+    maxdoys_temp.to_netcdf(os.path.join(outdir, cropname + 'max_tempscore_doys.nc'))
+    maxdoys_prec.to_netcdf(os.path.join(outdir, cropname + 'max_precscore_doys.nc'))
+
+    # calculate the decadal averages, using circular averaging
+    maxdoys_decades = []
+    maxdoys_temp_decades = []
+    maxdoys_prec_decades = []
+    for idx in range(0, 60, 10):
+        maxdoys_decade       = maxdoys[idx:idx+10,:,:]
+        maxdoys_temp_decade  = maxdoys_temp[idx:idx+10,:,:]
+        maxdoys_prec_decade  = maxdoys_prec[idx:idx+10,:,:]
+        maxdoys_decade       = circular_avg(maxdoys_decade, 'year')
+        maxdoys_temp_decade  = circular_avg(maxdoys_temp_decade, 'year')
+        maxdoys_prec_decade  = circular_avg(maxdoys_prec_decade, 'year')
+        maxdoys_decade       = maxdoys_decade.expand_dims({'decade': [2020+idx]})
+        maxdoys_temp_decade  = maxdoys_temp_decade.expand_dims({'decade': [2020+idx]})
+        maxdoys_prec_decade  = maxdoys_prec_decade.expand_dims({'decade': [2020+idx]})
+        maxdoys_decades.append(maxdoys_decade)
+        maxdoys_temp_decades.append(maxdoys_temp_decade)
+        maxdoys_prec_decades.append(maxdoys_prec_decade)
+    maxdoys_decades       = xr.merge(maxdoys_decades)['dayofyear']
+    maxdoys_temp_decades  = xr.merge(maxdoys_temp_decades)['dayofyear']
+    maxdoys_prec_decades  = xr.merge(maxdoys_prec_decades)['dayofyear']
+    # save to disk
+    maxdoys_decades.to_netcdf(os.path.join(outdir, cropname + '_max_score_doys_decades.nc'))
+    maxdoys_temp_decades.to_netcdf(os.path.join(outdir, cropname + 'max_tempscore_doys_decades.nc'))
+    maxdoys_prec_decades.to_netcdf(os.path.join(outdir, cropname + 'max_precscore_doys_decades.nc'))
+    
+    # calculate the decadal changes from the 2020s, using modulo (circular) arithmetic
+    maxdoys_decadal_changes      = maxdoys_decades.copy()[1:,:,:]
+    maxdoys_temp_decadal_changes = maxdoys_temp_decades.copy()[1:,:,:]
+    maxdoys_prec_decadal_changes = maxdoys_prec_decades.copy()[1:,:,:]
+    for dec in range(1,6):
+        maxdoys_decadal_changes[dec-1,:,:] = (maxdoys_decades[dec,:,:] - \
+                                              maxdoys_decades[0,:,:])
+        maxdoys_temp_decadal_changes[dec-1,:,:] = (maxdoys_temp_decades[dec,:,:] - \
+                                                   maxdoys_temp_decades[0,:,:])
+        maxdoys_prec_decadal_changes[dec-1,:,:] = (maxdoys_prec_decades[dec,:,:] - \
+                                                   maxdoys_prec_decades[0,:,:])
+    maxdoys_decadal_changes = xr.where(maxdoys_decadal_changes > 180, maxdoys_decadal_changes % -180,
+                              xr.where(maxdoys_decadal_changes < -180, maxdoys_decadal_changes % 180,
+                                       maxdoys_decadal_changes))
+    maxdoys_temp_decadal_changes = xr.where(maxdoys_temp_decadal_changes > 180, maxdoys_temp_decadal_changes % -180,
+                                   xr.where(maxdoys_temp_decadal_changes < -180, maxdoys_temp_decadal_changes % 180,
+                                            maxdoys_temp_decadal_changes))
+    maxdoys_prec_decadal_changes = xr.where(maxdoys_prec_decadal_changes > 180, maxdoys_prec_decadal_changes % -180,
+                                   xr.where(maxdoys_prec_decadal_changes < -180, maxdoys_prec_decadal_changes % 180,
+                                            maxdoys_prec_decadal_changes))
+    maxdoys_decadal_changes.to_netcdf(os.path.join(outdir, cropname + '_max_score_doys_decadal_changes.nc'))
+    maxdoys_temp_decadal_changes.to_netcdf(os.path.join(outdir, cropname + 'max_tempscore_doys_decadal_changes.nc'))
+    maxdoys_prec_decadal_changes.to_netcdf(os.path.join(outdir, cropname + 'max_precscore_doys_decadal_changes.nc'))
+    return maxdoys_decadal_changes, maxdoys_temp_decadal_changes, maxdoys_prec_decadal_changes
+    
+def calc_decadal_kprop_changes(ktmpap, kmaxap, SOIL, LCMloc, sgmloc, cropname, outdir):
+    '''
+    Calculate decadal changes in the average proportion of ktmp & kmax days
+    '''
+
+    # Calculate monthly average
+    ktmpap_monavg = ktmpap.resample(time="1MS").mean(dim="time")
+    kmaxap_monavg = kmaxap.resample(time="1MS").mean(dim="time")
+
+    # mask
+    lcm = xr.open_rasterio(LCMloc)
+    lcm = lcm.drop('band').squeeze()
+    lcm=lcm[::-1,:]
+    ktmpap_monavg = lcm_mask(lcm, ktmpap_monavg)
+    kmaxap_monavg = lcm_mask(lcm, kmaxap_monavg)
+    ktmpap_monavg = soil_type_mask_all(ktmpap_monavg,  SOIL, sgmloc)
+    kmaxap_monavg = soil_type_mask_all(kmaxap_monavg,  SOIL, sgmloc)
+    
+    # calculate monthly climatologies for each decade
+    ktmpap_monavg_climo1 = ktmpap_monavg[:120,:,:].groupby('time.month').mean().expand_dims({'decade': [2020]})
+    ktmpap_monavg_climo2 = ktmpap_monavg[120:240,:,:].groupby('time.month').mean().expand_dims({'decade': [2030]})
+    ktmpap_monavg_climo3 = ktmpap_monavg[240:360,:,:].groupby('time.month').mean().expand_dims({'decade': [2040]})
+    ktmpap_monavg_climo4 = ktmpap_monavg[360:480,:,:].groupby('time.month').mean().expand_dims({'decade': [2050]})
+    ktmpap_monavg_climo5 = ktmpap_monavg[480:600,:,:].groupby('time.month').mean().expand_dims({'decade': [2060]})
+    ktmpap_monavg_climo6 = ktmpap_monavg[600:,:,:].groupby('time.month').mean().expand_dims({'decade': [2070]})
+    kmaxap_monavg_climo1 = kmaxap_monavg[:120,:,:].groupby('time.month').mean().expand_dims({'decade': [2020]})
+    kmaxap_monavg_climo2 = kmaxap_monavg[120:240,:,:].groupby('time.month').mean().expand_dims({'decade': [2030]})
+    kmaxap_monavg_climo3 = kmaxap_monavg[240:360,:,:].groupby('time.month').mean().expand_dims({'decade': [2040]})
+    kmaxap_monavg_climo4 = kmaxap_monavg[360:480,:,:].groupby('time.month').mean().expand_dims({'decade': [2050]})
+    kmaxap_monavg_climo5 = kmaxap_monavg[480:600,:,:].groupby('time.month').mean().expand_dims({'decade': [2060]})
+    kmaxap_monavg_climo6 = kmaxap_monavg[600:,:,:].groupby('time.month').mean().expand_dims({'decade': [2070]})
+    
+    ktmpap_monavg_climos = xr.concat([ktmpap_monavg_climo1, ktmpap_monavg_climo2, ktmpap_monavg_climo3,
+                                      ktmpap_monavg_climo4, ktmpap_monavg_climo5, ktmpap_monavg_climo6],
+                                      dim='decade')
+    kmaxap_monavg_climos = xr.concat([kmaxap_monavg_climo1, kmaxap_monavg_climo2, kmaxap_monavg_climo3,
+                                      kmaxap_monavg_climo4, kmaxap_monavg_climo5, kmaxap_monavg_climo6],
+                                      dim='decade')
+    ktmpap_monavg_climos.to_netcdf(os.path.join(outdir, cropname + '_ktmpdaysavgprop_decades.nc'))    
+    kmaxap_monavg_climos.to_netcdf(os.path.join(outdir, cropname + '_kmaxdaysavgprop_decades.nc'))    
+    
+    # difference the climatologies
+    ktmpap_monavg_climo_diffs = ktmpap_monavg_climos.copy()[1:]
+    kmaxap_monavg_climo_diffs = kmaxap_monavg_climos.copy()[1:]
+    for dec in range(1,6):
+        ktmpap_monavg_climo_diffs[dec-1] = ktmpap_monavg_climos[dec] - \
+                                           ktmpap_monavg_climos[0]
+        kmaxap_monavg_climo_diffs[dec-1] = kmaxap_monavg_climos[dec] - \
+                                           kmaxap_monavg_climos[0]
+    ktmpap_monavg_climo_diffs.to_netcdf(os.path.join(outdir, cropname + '_ktmpdaysavgprop_decadal_changes.nc'))    
+    kmaxap_monavg_climo_diffs.to_netcdf(os.path.join(outdir, cropname + '_kmaxdaysavgprop_decadal_changes.nc'))    
+
+    return ktmpap_monavg_climo_diffs, kmaxap_monavg_climo_diffs
 
 def plot_decadal_changes(dcdata, save=None, cmin=None, cmax=None):
     
