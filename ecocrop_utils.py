@@ -130,14 +130,14 @@ def calculate_max_doy(allscore, tempscore, precscore):
     return maxdoys, maxdoys_temp, maxdoys_prec
 
 
-def calc_decadal_changes(allscore, tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, outdir):
+def calc_decadal_changes(tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, outdir):
     '''
     Calculate decadal changes of crop suitability scores from the 
     daily crop suitability scores. 
-    allscore, tempscore, precscore inputs either netcdf filenames
+    tempscore, precscore inputs either netcdf filenames
     or xarray dataarrays. Both must have variables 
-    'crop_suitability_score', 'temperature_suitability_score' and
-    'precip_suitability_score'
+    'temperature_suitability_score' and
+    'precip_suitability_score', respectively
     
     SOIL: Soil group suitability string from the ecocrop database
     LCMloc: Land cover mask. Path to tif
@@ -149,9 +149,9 @@ def calc_decadal_changes(allscore, tempscore, precscore, SOIL, LCMloc, sgmloc, c
     print('Calculating yearly score')
     # crop suitability score for a given year is the max
     # over all days in the year
-    allscore_years  = allscore.groupby('time.year').max()
     tempscore_years = tempscore.groupby('time.year').max()
     precscore_years = precscore.groupby('time.year').max()
+    allscore_years = xr.where(precscore_years < tempscore_years, precscore_years, tempscore_years)
 
     print('Doing masking')
     # mask at this stage to avoid memory issues

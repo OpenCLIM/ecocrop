@@ -20,11 +20,11 @@ prevname = 'pr'
 tmnvname = 'tasmin'
 tmxvname = 'tasmax'
 predir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/precalcs/precalcs'
-savedir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/scores'
+savedir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/scores_prec_tests' + '/method_' + str(sys.argv[2])
 lcmloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/LCM15_Arable_Mask.tif'
 bgsloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/BGS_soildata/masks'
-plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots'
-precmethod = 2 # which precip score method to use (see utils.py for funcs)
+plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots_prec_tests' + '/method_' + str(sys.argv[2])
+precmethod = int(sys.argv[2]) # which precip score method to use (see utils.py for funcs)
 
 ecocropall = pd.read_csv(ecocroploc, engine='python')
 ecocrop = ecocropall.drop(['level_0'], axis=1)
@@ -89,6 +89,8 @@ print('GMIN: ' + str(testcrop['GMIN']))
 print('GMAX: ' + str(testcrop['GMAX']))
 print('PMIN: ' + str(testcrop['RMIN']))
 print('PMAX: ' + str(testcrop['RMAX']))
+print('POPMN: ' + str(testcrop['ROPMN']))
+print('POPMX: ' + str(testcrop['ROPMX']))
 print('SOIL: ' + str(SOIL))
 sys.stdout.flush()
 
@@ -107,6 +109,7 @@ if not os.path.exists(plotdir):
 
 # open datafiles
 print('Reading in met data')
+print('Start: ' + str(dt.datetime.now()))
 sys.stdout.flush()
 tas = xr.open_mfdataset(taspath).astype('float16')[tasvname]
 tmn = xr.open_mfdataset(tmnpath).astype('float16')[tmnvname]
@@ -116,10 +119,16 @@ tas = tas.sel(time=slice('2020-01-01', tas['time'][-1])).load()
 tmn = tmn.sel(time=slice('2020-01-01', tmn['time'][-1])).load()
 tmx = tmx.sel(time=slice('2020-01-01', tmx['time'][-1])).load()
 pre = pre.sel(time=slice('2020-01-01', pre['time'][-1])).load()
+print('End: ' + str(dt.datetime.now()))
 
+print('Calculating topt_, ktmp_ and kmax_crop')
+print('Start: ' + str(dt.datetime.now()))
+sys.stdout.flush()
 topt_crop = xr.where(xr.ufuncs.logical_and(tas < TOPMAX, tas > TOPMIN), 1, 0).astype('uint16').values
 ktmp_crop = xr.where(tmn < KTMP, 1, 0).astype('uint16').values
 kmax_crop = xr.where(tmx > KMAX, 1, 0).astype('uint16').values
+print('End: ' + str(dt.datetime.now()))
+sys.stdout.flush()
 
 if GMAX-GMIN<=15:
     gstart = np.int16(np.floor(GMIN/10)*10)
@@ -200,14 +209,15 @@ allgtimes = list(np.arange(gstart, gend, 10, dtype='int16'))
 
 # create arrays to store the total proportion of ktmp/kmax days amassed over all the gtimes
 # for later calculating the average
+print('Creating ktmp_days_prop and kmax_days_prop arrays')
+print('Start: ' + str(dt.datetime.now()))
 ktmp_days_prop_total = ktmp_crop.copy()[:-allgtimes[-1]+1].astype('float32')
 kmax_days_prop_total = kmax_crop.copy()[:-allgtimes[-1]+1].astype('float32')
 ktmp_days_prop_total[:] = 0
 kmax_days_prop_total[:] = 0
-print(ktmp_days_prop_total.shape)
-print(ktmp_days_prop_total.dtype)
-sys.stdout.flush()
 kdptlen = ktmp_days_prop_total.shape[0]
+print('End: ' + str(dt.datetime.now()))
+sys.stdout.flush()
 
 counter=1
 GMIN = np.uint16(GMIN)
@@ -216,8 +226,10 @@ for gtime in allgtimes:
     print('Calculating suitability for ' + cropname + \
           ' for a growing season of length ' + str(gtime) + \
           ' out of a maximum of ' + str(int(GMAX)))
+    print('Start: ' + str(dt.datetime.now()))
+    
+    print('Calculating ndays of T in optimal range within gtime')
     sys.stdout.flush()
-
     # calculate ndays of T in optimal range within gtime
     tcoords_tas = tas['time'][:-gtime+1]
     ycoords_tas = tas['y']
@@ -225,9 +237,13 @@ for gtime in allgtimes:
     toptdays = frs3D(topt_crop, gtime, 'uint16')
     toptdays = xr.DataArray(toptdays, coords=[tcoords_tas, ycoords_tas, xcoords_tas])
     toptdays.name = 'TOPT_days'
+    print('End: ' + str(dt.datetime.now())) 
 
     # calculate whether any of the suitable days/locations identified above will have
     # frost/killing temp within gtime
+    print('Calculating frost days and their proportions')
+    print('Start: ' + str(dt.datetime.now()))
+    sys.stdout.flush()
     tcoords_tmn = tmn['time'][:-gtime+1]
     ycoords_tmn = tmn['y']
     xcoords_tmn = tmn['x']
@@ -236,10 +252,13 @@ for gtime in allgtimes:
     ktmp_days = xr.DataArray(ktmp_days, coords=[tcoords_tmn, ycoords_tmn, xcoords_tmn])
     ktmp_days.name = 'KTMP_days'
     print(ktmp_days_prop_total.dtype)
-    sys.stdout.flush()
+    print('End: ' + str(dt.datetime.now())) 
 
     # calculate whether any of the suitable days/locations identified above will have
     # heat killing temp within gtime
+    print('Calculating heat-stress days and their proportions')
+    print('Start: ' + str(dt.datetime.now()))
+    sys.stdout.flush()
     tcoords_tmx = tmx['time'][:-gtime+1]
     ycoords_tmx = tmx['y']
     xcoords_tmx = tmx['x']
@@ -247,7 +266,11 @@ for gtime in allgtimes:
     kmax_days_prop_total += (kmax_days/gtime)[:kdptlen]
     kmax_days = xr.DataArray(kmax_days, coords=[tcoords_tmx, ycoords_tmx, xcoords_tmx])
     kmax_days.name = 'KMAX_days'
+    print('End: ' + str(dt.datetime.now())) 
 
+    print('Calculating total precipitation')
+    print('Start: ' + str(dt.datetime.now()))
+    sys.stdout.flush()
     # calculate total precipitation in gtime
     tcoords_pre = pre['time'][:-gtime+1]
     ycoords_pre = pre['y']
@@ -256,13 +279,15 @@ for gtime in allgtimes:
     precip_crop = frs3D(pre2, gtime, 'float32')
     precip_crop = xr.DataArray(precip_crop, coords=[tcoords_pre, ycoords_pre, xcoords_pre])
     precip_crop.name = 'precip_total'
+    print('End: ' + str(dt.datetime.now())) 
 
     ########### STAGE 3 #############
 
-
     print('Calculating where T suitable within GTIME')
+    print('Start: ' + str(dt.datetime.now()))
     sys.stdout.flush()
     suit_crop = xr.where(toptdays >= GMIN, 1, 0).astype('uint8')
+    print('End: ' + str(dt.datetime.now())) 
 
     # if they are different lengths it will likely be because the end of the data is missing
     # (due to a minor bug in the frs3D functions), so need to account for this
@@ -277,7 +302,8 @@ for gtime in allgtimes:
     #    suit_crop = suit_crop.sel(time=slice(kmax_days['time'][0], kmax_days['time'][-1]))
     #suit_crop2 = xr.where(kmax_days > np.uint8(0), suit_crop - np.uint8(kmax_days), suit_crop)
 
-    print('Calculating KTMP')
+    print('Masking based on KTMP')
+    print('Start: ' + str(dt.datetime.now()))
     sys.stdout.flush()
     #ktmpfname = 'KTMP_' + str(int(testcrop['KTMPR'])) + \
     #            '_gtime_' + str(int(gtime)) + 'v2.nc'
@@ -288,14 +314,17 @@ for gtime in allgtimes:
     #elif len(ktmp_days['time']) < len(suit_crop2['time']):
     #    suit_crop2 = suit_crop2.sel(time=slice(ktmp_days['time'][0], ktmp_days['time'][-1]))
     suit_crop2 = xr.where(ktmp_days > np.uint8(0), np.uint8(0), suit_crop)
+    print('End: ' + str(dt.datetime.now())) 
 
     print('Calculating T suitability score and KMAX days penalty')
+    print('Start: ' + str(dt.datetime.now()))
     sys.stdout.flush()
     tscore = score_temp(gtime, GMIN, GMAX)
     tempscore1 = xr.where(suit_crop2 > np.uint8(0), tscore, np.uint8(0)).astype('int8')
     kmax_days = xr.where(suit_crop2 > np.uint8(0), kmax_days, np.uint(0))
     tempscore = tempscore1 - np.int8(kmax_days)
     tempscore = xr.where(tempscore < 0, 0, tempscore).astype('uint8')
+    print('End: ' + str(dt.datetime.now())) 
 
     #precfname = 'PREC_' + \
     #            'gtime_' + str(int(gtime)) + 'v2.nc'
@@ -303,6 +332,7 @@ for gtime in allgtimes:
     #print('Loading prec file')
     #precip_crop = xr.open_dataset(precpath)['PRECtotal'].astype('float16')
     print('Calculating precip suitability score using method ' + str(precmethod))
+    print('Start: ' + str(dt.datetime.now()))
     sys.stdout.flush()
     if precmethod==1:
         precscore = score_prec1(precip_crop, PMIN, PMAX, POPMIN, POPMAX)
@@ -312,8 +342,10 @@ for gtime in allgtimes:
         precscore = score_prec3(precip_crop, PMIN, PMAX, POPMIN, POPMAX)
     else:
         raise ValueError('precmethod must be 1, 2 or 3. Currently set as ' + str(precmethod))
+    print('End: ' + str(dt.datetime.now())) 
 
-    print('Merging T & P suitability scores')
+    print('Updating T & P suitability scores for this gtime')
+    print('Start: ' + str(dt.datetime.now()))
     sys.stdout.flush()
     if counter==1:
         tempscore_old = tempscore
@@ -330,11 +362,20 @@ for gtime in allgtimes:
 
         del suit_crop
         del suit_crop2
+        print('End: ' + str(dt.datetime.now())) 
+        sys.stdout.flush()
     counter+=1
+
+print('Calculating final combined crop suitability score')
+print('Start: ' + str(dt.datetime.now()))
+sys.stdout.flush()
 final_score_crop = xr.where(precscore < tempscore, precscore, tempscore)
 print(final_score_crop.dtype)
-sys.stdout.flush()
+print('End: ' + str(dt.datetime.now())) 
 
+print('Calculating average ktmp_ and kmax_days proportions')
+print('Start: ' + str(dt.datetime.now()))
+sys.stdout.flush()
 ktmp_days_avg_prop = ktmp_days_prop_total/len(allgtimes)
 kmax_days_avg_prop = kmax_days_prop_total/len(allgtimes)
 tcoords_k = tmn['time'][:-allgtimes[-1]+1]
@@ -342,8 +383,11 @@ ktmp_days_avg_prop = xr.DataArray(ktmp_days_avg_prop, coords=[tcoords_k, ycoords
 kmax_days_avg_prop = xr.DataArray(kmax_days_avg_prop, coords=[tcoords_k, ycoords_tmx, xcoords_tmx])
 print(ktmp_days_avg_prop)
 print(ktmp_days_avg_prop.dtype)
-sys.stdout.flush()
+print('End: ' + str(dt.datetime.now())) 
 
+print('Saving to netcdf')
+print('Start: ' + str(dt.datetime.now()))
+sys.stdout.flush()
 # save to netcdf
 final_score_crop.name = 'crop_suitability_score'
 final_score_crop.encoding['zlib'] = True
@@ -394,12 +438,14 @@ kmax_days_avg_prop.encoding['dtype'] = np.dtype('float32')
 encoding = {}
 encoding['average_proportion_of_kmax_days_in_gtime'] = kmax_days_avg_prop.encoding
 kmax_days_avg_prop.to_netcdf(os.path.join(savedir, cropname + '_kmax_days_avg_prop.nc'), encoding=encoding)
+print('End: ' + str(dt.datetime.now())) 
+
 
 # calculate monthly climos of ktmp & kmax days avg prop for each decade and their differences
 print('Calculating monthly climo of ktmp/kmax proportions and decadal changes')
 sys.stdout.flush()
 ktmpap_monavg_climo_diffs, kmaxap_monavg_climo_diffs = \
-calc_decadal_kprop_changes(ktmpap, kmaxap, str(SOIL), lcmloc, bgsloc, cropname, savedir)
+calc_decadal_kprop_changes(ktmp_days_avg_prop, kmax_days_avg_prop, str(SOIL), lcmloc, bgsloc, cropname, savedir)
 
 # calculate day of year of maximum score
 print('Finding days of years of the maximum score')
@@ -417,7 +463,7 @@ plot_decadal_changes(maxdoys_prec_decadal_changes, save='plots/' + cropname + '_
 print('Calculating yearly scores and decadal changes')
 sys.stdout.flush()
 allscore_decadal_changes, tempscore_decadal_changes, precscore_decadal_changes = \
-calc_decadal_changes(final_score_crop, tempscore, precscore, str(SOIL), lcmloc, bgsloc, cropname, savedir)
+calc_decadal_changes(tempscore, precscore, str(SOIL), lcmloc, bgsloc, cropname, savedir)
 plot_decadal_changes(allscore_decadal_changes, save='plots/' + cropname + '_decadal_changes.png')
 plot_decadal_changes(tempscore_decadal_changes, save='plots/' + cropname + '_tempscore_decadal_changes.png')
 plot_decadal_changes(precscore_decadal_changes, save='plots/' + cropname + '_precscore_decadal_changes.png')
