@@ -335,14 +335,23 @@ def calc_decadal_kprop_changes(ktmpap, kmaxap, SOIL, LCMloc, sgmloc, cropname, o
 
     return ktmpap_monavg_climo_diffs, kmaxap_monavg_climo_diffs
 
-def plot_decadal_changes(dcdata, save=None, cmin=None, cmax=None):
+def plot_decadal_changes(dcdata, save=None, cmin=None, cmax=None, revcolbar=None):
     
     if not cmax:
-        cmax = np.ceil(dcdata.max().values)
-        #print(cmax)
+        cmax2 = np.ceil(dcdata.max().values)
+        if cmax2 not in (0., 1.):
+            cmax = cmax2
+        else:
+            cmax = dcdata.max().values
+        print(cmax)
     if not cmin:
-        cmin = np.floor(dcdata.min().values)
-        #print(cmin)
+        cmin2 = np.floor(dcdata.min().values)
+        if cmin2 not in (0., -1.):
+            cmin = cmin2
+        else:
+            cmin = dcdata.min().values
+        print(cmin)
+    
     if abs(cmax) > abs(cmin):
         cmin = -1*cmax
     else:
@@ -366,9 +375,13 @@ def plot_decadal_changes(dcdata, save=None, cmin=None, cmax=None):
     #ax1.pcolormesh(dcdata['x'].values, dcdata['y'].values, dcdata[0,:,:].values, cmap='bwr_r', vmin=cmin, vmax=cmax)
     #ax2.pcolormesh(dcdata['x'].values, dcdata['y'].values, dcdata[2,:,:].values, cmap='bwr_r', vmin=cmin, vmax=cmax)
     #c = ax3.pcolormesh(dcdata['x'].values, dcdata['y'].values, dcdata[4,:,:].values, cmap='bwr_r', vmin=cmin, vmax=cmax)
-    dcdata[0,:,:].plot(ax=ax1, vmin=cmin, vmax=cmax, cmap='bwr_r')
-    dcdata[2,:,:].plot(ax=ax2, vmin=cmin, vmax=cmax, cmap='bwr_r')
-    dcdata[4,:,:].plot(ax=ax3, vmin=cmin, vmax=cmax, cmap='bwr_r')
+    if not revcolbar:
+        cmap = 'bwr_r'
+    else:
+        cmap = 'bwr'
+    dcdata[0,:,:].plot(ax=ax1, vmin=cmin, vmax=cmax, cmap=cmap)
+    dcdata[2,:,:].plot(ax=ax2, vmin=cmin, vmax=cmax, cmap=cmap)
+    dcdata[4,:,:].plot(ax=ax3, vmin=cmin, vmax=cmax, cmap=cmap)
 
     cbartext = dcdata.name + '_change'
     cbarax1 = ax1.collections[0].colorbar.ax
