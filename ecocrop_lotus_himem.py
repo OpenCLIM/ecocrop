@@ -455,17 +455,17 @@ print('Calculating yearly average of this and decadal changes using modulo arith
 sys.stdout.flush()
 maxdoys_decadal_changes, maxdoys_temp_decadal_changes, maxdoys_prec_decadal_changes = \
 calc_decadal_doy_changes(maxdoys, maxdoys_temp, maxdoys_prec, str(SOIL), lcmloc, bgsloc, cropname, savedir)
-plot_decadal_changes(maxdoys_decadal_changes, save='plots/' + cropname + '_maxdoys_decadal_changes.png')
-plot_decadal_changes(maxdoys_temp_decadal_changes, save='plots/' + cropname + '_maxdoys_temp_decadal_changes.png')
-plot_decadal_changes(maxdoys_prec_decadal_changes, save='plots/' + cropname + '_maxdoys_prec_decadal_changes.png')
+plot_decadal_changes(maxdoys_decadal_changes, save=os.path.join(plotdir, cropname + '_maxdoys_decadal_changes.png'))
+plot_decadal_changes(maxdoys_temp_decadal_changes, save=os.path.join(plotdir, cropname + '_maxdoys_temp_decadal_changes.png'))
+plot_decadal_changes(maxdoys_prec_decadal_changes, save=os.path.join(plotdir, cropname + '_maxdoys_prec_decadal_changes.png'))
 
 # calculate yearly scores and decadal changes
 print('Calculating yearly scores and decadal changes')
 sys.stdout.flush()
 allscore_decadal_changes, tempscore_decadal_changes, precscore_decadal_changes = \
 calc_decadal_changes(tempscore, precscore, str(SOIL), lcmloc, bgsloc, cropname, savedir)
-plot_decadal_changes(allscore_decadal_changes, save='plots/' + cropname + '_decadal_changes.png')
-plot_decadal_changes(tempscore_decadal_changes, save='plots/' + cropname + '_tempscore_decadal_changes.png')
-plot_decadal_changes(precscore_decadal_changes, save='plots/' + cropname + '_precscore_decadal_changes.png')
+plot_decadal_changes(allscore_decadal_changes, save=os.path.join(plotdir, cropname + '_decadal_changes.png'))
+plot_decadal_changes(tempscore_decadal_changes, save=os.path.join(plotdir, cropname + '_tempscore_decadal_changes.png'))
+plot_decadal_changes(precscore_decadal_changes, save=os.path.join(plotdir, cropname + '_precscore_decadal_changes.png'))
 
 

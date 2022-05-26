@@ -164,6 +164,7 @@ def calc_decadal_changes(tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, o
     allscore_years  = soil_type_mask_all(allscore_years,  SOIL, sgmloc)
     tempscore_years = soil_type_mask_all(tempscore_years, SOIL, sgmloc)
     precscore_years = soil_type_mask_all(precscore_years, SOIL, sgmloc)
+    allscore_years.name = 'crop_suitability_score'
     allscore_years.to_netcdf(os.path.join(outdir, cropname + '_years.nc'))
     tempscore_years.to_netcdf(os.path.join(outdir, cropname + '_tempscore_years.nc'))
     precscore_years.to_netcdf(os.path.join(outdir, cropname + '_precscore_years.nc'))
@@ -227,8 +228,8 @@ def calc_decadal_doy_changes(maxdoys, maxdoys_temp, maxdoys_prec, SOIL, LCMloc, 
     maxdoys_prec  = soil_type_mask_all(maxdoys_prec,  SOIL, sgmloc)
     # save to disk
     maxdoys.to_netcdf(os.path.join(outdir, cropname + '_max_score_doys.nc'))
-    maxdoys_temp.to_netcdf(os.path.join(outdir, cropname + 'max_tempscore_doys.nc'))
-    maxdoys_prec.to_netcdf(os.path.join(outdir, cropname + 'max_precscore_doys.nc'))
+    maxdoys_temp.to_netcdf(os.path.join(outdir, cropname + '_max_tempscore_doys.nc'))
+    maxdoys_prec.to_netcdf(os.path.join(outdir, cropname + '_max_precscore_doys.nc'))
 
     # calculate the decadal averages, using circular averaging
     maxdoys_decades = []
@@ -252,8 +253,8 @@ def calc_decadal_doy_changes(maxdoys, maxdoys_temp, maxdoys_prec, SOIL, LCMloc, 
     maxdoys_prec_decades  = xr.merge(maxdoys_prec_decades)['dayofyear']
     # save to disk
     maxdoys_decades.to_netcdf(os.path.join(outdir, cropname + '_max_score_doys_decades.nc'))
-    maxdoys_temp_decades.to_netcdf(os.path.join(outdir, cropname + 'max_tempscore_doys_decades.nc'))
-    maxdoys_prec_decades.to_netcdf(os.path.join(outdir, cropname + 'max_precscore_doys_decades.nc'))
+    maxdoys_temp_decades.to_netcdf(os.path.join(outdir, cropname + '_max_tempscore_doys_decades.nc'))
+    maxdoys_prec_decades.to_netcdf(os.path.join(outdir, cropname + '_max_precscore_doys_decades.nc'))
     
     # calculate the decadal changes from the 2020s, using modulo (circular) arithmetic
     maxdoys_decadal_changes      = maxdoys_decades.copy()[1:,:,:]
@@ -276,8 +277,8 @@ def calc_decadal_doy_changes(maxdoys, maxdoys_temp, maxdoys_prec, SOIL, LCMloc, 
                                    xr.where(maxdoys_prec_decadal_changes < -180, maxdoys_prec_decadal_changes % 180,
                                             maxdoys_prec_decadal_changes))
     maxdoys_decadal_changes.to_netcdf(os.path.join(outdir, cropname + '_max_score_doys_decadal_changes.nc'))
-    maxdoys_temp_decadal_changes.to_netcdf(os.path.join(outdir, cropname + 'max_tempscore_doys_decadal_changes.nc'))
-    maxdoys_prec_decadal_changes.to_netcdf(os.path.join(outdir, cropname + 'max_precscore_doys_decadal_changes.nc'))
+    maxdoys_temp_decadal_changes.to_netcdf(os.path.join(outdir, cropname + '_max_tempscore_doys_decadal_changes.nc'))
+    maxdoys_prec_decadal_changes.to_netcdf(os.path.join(outdir, cropname + '_max_precscore_doys_decadal_changes.nc'))
     return maxdoys_decadal_changes, maxdoys_temp_decadal_changes, maxdoys_prec_decadal_changes
     
 def calc_decadal_kprop_changes(ktmpap, kmaxap, SOIL, LCMloc, sgmloc, cropname, outdir):
