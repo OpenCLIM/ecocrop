@@ -130,7 +130,7 @@ def calculate_max_doy(allscore, tempscore, precscore):
     return maxdoys, maxdoys_temp, maxdoys_prec
 
 
-def calc_decadal_changes(tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, outdir):
+def calc_decadal_changes(tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, outdir, yearaggmethod):
     '''
     Calculate decadal changes of crop suitability scores from the 
     daily crop suitability scores. 
@@ -149,8 +149,17 @@ def calc_decadal_changes(tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, o
     print('Calculating yearly score')
     # crop suitability score for a given year is the max
     # over all days in the year
-    tempscore_years = tempscore.groupby('time.year').max()
-    precscore_years = precscore.groupby('time.year').max()
+    if yearaggmethod == 'max':
+        tempscore_years = tempscore.groupby('time.year').max()
+        precscore_years = precscore.groupby('time.year').max()
+    elif yearaggmethod == 'median':
+        tempscore_years = tempscore.groupby('time.year').median()
+        precscore_years = precscore.groupby('time.year').median()
+    elif yearaggmethod == 'mean':
+        tempscore_years = tempscore.groupby('time.year').mean()
+        precscore_years = precscore.groupby('time.year').mean()
+    else:
+        raise SyntaxError("yearaggmethod must be one of max, median or mean")
     allscore_years = xr.where(precscore_years < tempscore_years, precscore_years, tempscore_years)
 
     print('Doing masking')
@@ -208,7 +217,7 @@ def calc_decadal_changes(tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, o
     tempscore_decadal_changes.to_netcdf(os.path.join(outdir, cropname + '_tempscore_decadal_changes.nc'))
     precscore_decadal_changes.to_netcdf(os.path.join(outdir, cropname + '_precscore_decadal_changes.nc'))
 
-    return allscore_decadal_changes, tempscore_decadal_changes, precscore_decadal_changes
+    return allscore_decades, tempscore_decades, precscore_decades, allscore_decadal_changes, tempscore_decadal_changes, precscore_decadal_changes
 
 def calc_decadal_doy_changes(maxdoys, maxdoys_temp, maxdoys_prec, SOIL, LCMloc, sgmloc, cropname, outdir):
     '''
@@ -334,6 +343,38 @@ def calc_decadal_kprop_changes(ktmpap, kmaxap, SOIL, LCMloc, sgmloc, cropname, o
     kmaxap_monavg_climo_diffs.to_netcdf(os.path.join(outdir, cropname + '_kmaxdaysavgprop_decadal_changes.nc'))    
 
     return ktmpap_monavg_climo_diffs, kmaxap_monavg_climo_diffs
+
+def plot_decade(allscore, tempscore, precscore, save=None):
+    fig, axs = plt.subplots(1,3, subplot_kw={'projection': cp.crs.OSGB()})
+    fig.set_figwidth(10)
+    ax1 = axs[0]
+    ax2 = axs[1]
+    ax3 = axs[2]
+    ax1.coastlines(resolution='10m')
+    ax2.coastlines(resolution='10m')
+    ax3.coastlines(resolution='10m')
+    
+    allscore.plot(ax=ax1, vmin=0, vmax=100)
+    tempscore.plot(ax=ax2, vmin=0, vmax=100)
+    precscore.plot(ax=ax3, vmin=0, vmax=100)
+    
+    cbarax1 = ax1.collections[0].colorbar.ax
+    cbarax2 = ax2.collections[0].colorbar.ax
+    cbarax3 = ax3.collections[0].colorbar.ax
+    cbarax1.set_ylabel('')
+    cbarax2.set_ylabel('')
+    cbarax3.set_ylabel('')
+    
+    ax1.set_title('crop_suitability')
+    ax2.set_title('temperature_suitability')
+    ax3.set_title('precip_suitability')
+
+    if not save==None:
+        savedir = os.path.dirname(save)
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        plt.savefig(save, dpi=300)
+
 
 def plot_decadal_changes(dcdata, save=None, cmin=None, cmax=None, revcolbar=None):
     

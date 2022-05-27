@@ -19,11 +19,12 @@ tasvname = 'tas'
 prevname = 'pr'
 tmnvname = 'tasmin'
 tmxvname = 'tasmax'
+yearaggmethod = 'median'
 predir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/precalcs/precalcs'
-savedir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/scores_prec_tests' + '/method_' + str(sys.argv[2])
+savedir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/scores_agg_tests' + '/' + yearaggmethod
 lcmloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/LCM15_Arable_Mask.tif'
 bgsloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/BGS_soildata/masks'
-plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots_prec_tests' + '/method_' + str(sys.argv[2])
+plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots_agg_tests' + '/' yearaggmethod
 precmethod = int(sys.argv[2]) # which precip score method to use (see utils.py for funcs)
 
 ecocropall = pd.read_csv(ecocroploc, engine='python')
@@ -470,10 +471,9 @@ plot_decadal_changes(maxdoys_prec_decadal_changes, save=os.path.join(plotdir, cr
 # calculate yearly scores and decadal changes
 print('Calculating yearly scores and decadal changes')
 sys.stdout.flush()
-allscore_decadal_changes, tempscore_decadal_changes, precscore_decadal_changes = \
-calc_decadal_changes(tempscore, precscore, str(SOIL), lcmloc, bgsloc, cropname, savedir)
+allscore_decades, tempscore_decades, precscore_decades, allscore_decadal_changes, tempscore_decadal_changes, precscore_decadal_changes = \
+calc_decadal_changes(tempscore, precscore, str(SOIL), lcmloc, bgsloc, cropname, savedir, yearaggmethod)
 plot_decadal_changes(allscore_decadal_changes, save=os.path.join(plotdir, cropname + '_decadal_changes.png'))
 plot_decadal_changes(tempscore_decadal_changes, save=os.path.join(plotdir, cropname + '_tempscore_decadal_changes.png'))
 plot_decadal_changes(precscore_decadal_changes, save=os.path.join(plotdir, cropname + '_precscore_decadal_changes.png'))
-
-
+plot_decade(allscore_decades, tempscore_decades, precscore_decades, save=os.path.join(plotdir, cropname + '_current_decade.png'))
