@@ -476,4 +476,4 @@ calc_decadal_changes(tempscore, precscore, str(SOIL), lcmloc, bgsloc, cropname, 
 plot_decadal_changes(allscore_decadal_changes, save=os.path.join(plotdir, cropname + '_decadal_changes.png'))
 plot_decadal_changes(tempscore_decadal_changes, save=os.path.join(plotdir, cropname + '_tempscore_decadal_changes.png'))
 plot_decadal_changes(precscore_decadal_changes, save=os.path.join(plotdir, cropname + '_precscore_decadal_changes.png'))
-plot_decade(allscore_decades, tempscore_decades, precscore_decades, save=os.path.join(plotdir, cropname + '_current_decade.png'))
+plot_decade(allscore_decades[0,:,:], tempscore_decades[0,:,:], precscore_decades[0,:,:], save=os.path.join(plotdir, cropname + '_current_decade.png'))
