@@ -354,9 +354,9 @@ def plot_decade(allscore, tempscore, precscore, save=None):
     ax2.coastlines(resolution='10m')
     ax3.coastlines(resolution='10m')
     
-    allscore.plot(ax=ax1, vmin=0, vmax=100)
-    tempscore.plot(ax=ax2, vmin=0, vmax=100)
-    precscore.plot(ax=ax3, vmin=0, vmax=100)
+    allscore.where(allscore>0).plot(ax=ax1, vmin=0, vmax=100)
+    tempscore.where(tempscore>0).plot(ax=ax2, vmin=0, vmax=100)
+    precscore.where(precscore>0).plot(ax=ax3, vmin=0, vmax=100)
     
     cbarax1 = ax1.collections[0].colorbar.ax
     cbarax2 = ax2.collections[0].colorbar.ax

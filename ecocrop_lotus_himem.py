@@ -24,7 +24,7 @@ predir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/precalcs/precalcs'
 savedir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/scores_agg_tests' + '/' + yearaggmethod
 lcmloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/LCM15_Arable_Mask.tif'
 bgsloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/BGS_soildata/masks'
-plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots_agg_tests' + '/' yearaggmethod
+plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots_agg_tests' + '/' + yearaggmethod
 precmethod = int(sys.argv[2]) # which precip score method to use (see utils.py for funcs)
 
 ecocropall = pd.read_csv(ecocroploc, engine='python')
