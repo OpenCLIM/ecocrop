@@ -448,11 +448,11 @@ sys.stdout.flush()
 ktmpap_monavg_climo_diffs, kmaxap_monavg_climo_diffs = \
 calc_decadal_kprop_changes(ktmp_days_avg_prop, kmax_days_avg_prop, str(SOIL), lcmloc, bgsloc, cropname, savedir)
 for month in range(1, 13):
-    plot_decadal_changes(kmaxam_monavg_climo_diffs.sel(month=month), 
+    plot_decadal_changes(kmaxap_monavg_climo_diffs.sel(month=month), 
                          save=os.path.join(plotdir, cropname + '_kmaxdaysprop_decadal_change_month' + str(month) + '.png'),
                          revcolbar = 1)
 for month in range(1, 13):
-    plot_decadal_changes(ktmpam_monavg_climo_diffs.sel(month=month), 
+    plot_decadal_changes(ktmpap_monavg_climo_diffs.sel(month=month), 
                          save=os.path.join(plotdir, cropname + '_ktmpdaysprop_decadal_change_month' + str(month) + '.png'),
                          revcolbar = 1)
 
