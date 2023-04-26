@@ -4,44 +4,66 @@ from ecocrop_utils import *
 import pandas   as pd
 import xarray   as xr
 import numpy    as np
-import dask     as da
-import cftime   as cf
 import datetime as dt
-import subprocess as subp
 import os
 
+cropind = int(sys.argv[1])
+rcp = int(sys.argv[2]) # '85' or '26'
+ensmem = int(sys.argv[3]) # '01', '04', '06' or '15
+pf = int(sys.argv[4]) # 'past' or 'future'
+method = int(sys.argv[5]) # 'annual' or 'perennial'
+
+if pf == 'past':
+    ab = 'b2020'
+elif pf == 'future':
+    ab = 'a2020'
+else:
+    ab = ''
+
 ecocroploc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/EcoCrop_DB_secondtrim.csv'
-taspath = '/work/scratch-nopw/mattjbr/ecocrop/metdata/ukcp18_rcp85_land-rcm_uk_1km_01_v20190731_tas_bias_corrected_????.nc'
-prepath = '/work/scratch-nopw/mattjbr/ecocrop/metdata/ukcp18_rcp85_land-rcm_uk_1km_01_v20190731_pr_bias_corrected_????.nc'
-tmnpath = '/work/scratch-nopw/mattjbr/ecocrop/metdata/ukcp18_rcp85_land-rcm_uk_1km_01_v20190731_tasmin_bias_corrected_????.nc'
-tmxpath = '/work/scratch-nopw/mattjbr/ecocrop/metdata/ukcp18_rcp85_land-rcm_uk_1km_01_v20190731_tasmax_bias_corrected_????.nc'
+
 tasvname = 'tas'
 prevname = 'pr'
 tmnvname = 'tasmin'
 tmxvname = 'tasmax'
-yearaggmethod = 'median'
-predir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/precalcs/precalcs'
-savedir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/scores_agg_tests' + '/' + yearaggmethod
-lcmloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/LCM15_Arable_Mask.tif'
-bgsloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/BGS_soildata/masks'
-plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots_agg_tests' + '/' + yearaggmethod
-precmethod = int(sys.argv[2]) # which precip score method to use (see utils.py for funcs)
+taspath = '/badc/deposited2021/chess-scape/data/rcp' + rcp + '/' + ensmem + \
+          '/daily/tas/chess-scape_rcp' + rcp + '_' + ensmem + \
+          '_tas_uk_1km_daily_????????-????????.nc'
+prepath = '/badc/deposited2021/chess-scape/data/rcp' + rcp + '/' + ensmem + \
+          '/daily/pr/chess-scape_rcp' + rcp '_' + ensmem + \
+          '_pr_uk_1km_daily_????????-????????.nc'
+tmnpath = '/badc/deposited2021/chess-scape/data/rcp' + rcp + '/' + ensmem + \
+          '/daily/tasmin/chess-scape_rcp' + rcp + '_' + ensmem + \
+          '_tasmin_uk_1km_daily_????????-????????.nc'
+tmxpath = '/badc/deposited2021/chess-scape/data/rcp' + rcp + '/' + ensmem + \
+          '/daily/tasmax/chess-scape_rcp' + rcp + '_' + ensmem + \
+          '_tasmax_uk_1km_daily_????????-????????.nc'
+savedir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/scores_rcp' + \
+          rcp + '_ens' + ensmem + '_' + ab 
+plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots_rcp' + \
+          rcp + '_ens' + ensmem + '_' + ab 
+lcmloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/Mask_arable_LCM2015_UK.tif'
+bgsloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/EU_STM_soildata'
+
+yearaggmethod = 'percentile'
+precmethod = 2
 
 ecocropall = pd.read_csv(ecocroploc, engine='python')
 ecocrop = ecocropall.drop(['level_0'], axis=1)
-cropind = int(sys.argv[1])
 print('Cropind: ' + str(cropind))
 testcrop = ecocrop.iloc[cropind,:] # 19 onions, #117 wheat, #147 chickpea, #66 sweet potato
 TOPMIN = testcrop['TOPMN'] + 273.15 # C-->K
 TOPMAX = testcrop['TOPMX'] + 273.15 # C-->K
+TMIN = testcrop['TMIN'] + 273.15 # C-->K
+TMAX = testcrop['TMAX'] + 273.15 # C-->K
 PMIN = testcrop['RMIN']/86400. # mm-->kg/m^2/s
 PMAX = testcrop['RMAX']/86400. # mm-->kg/m^2/s
 POPMIN = testcrop['ROPMN']/86400. # mm-->kg/m^2/s
 POPMAX = testcrop['ROPMX']/86400. # mm-->kg/m^2/s
 KTMP = testcrop['KTMPR'] + 273.15 # C-->K
 KMAX = testcrop['TMAX'] + 273.15  # C-->K
-GMIN = testcrop['GMIN']
-GMAX = testcrop['GMAX']
+GMIN = int(testcrop['GMIN'])
+GMAX = int(testcrop['GMAX'])
 SOIL = testcrop['TEXT']
 COMNAME = testcrop['COMNAME']
 COMNAME = '_'.join(COMNAME.split(',')[0].split(' '))
@@ -57,6 +79,8 @@ if np.isnan(testcrop['TOPMN']):
     raise ValueError('Missing TOPMN')
 if np.isnan(testcrop['TOPMX']):
     raise ValueError('Missing TOPMX')
+if np.isnan(testcrop['TMIN']):
+    raise ValueError('Missing TMIN')
 if np.isnan(testcrop['TMAX']):
     raise ValueError('Missing TMAX (KMAX)')
 if np.isnan(testcrop['RMIN']):
@@ -82,6 +106,8 @@ if np.isnan(KTMP):
 
 GMIN = int(GMIN)
 GMAX = int(GMAX)
+print('TMN: ' + str(testcrop['TMIN']))
+print('TMX: ' + str(testcrop['TMAX']))
 print('TOPMN: ' + str(testcrop['TOPMN']))
 print('TOPMX: ' + str(testcrop['TOPMX']))
 print('KTMP: ' + str(testcrop['KTMPR']))
@@ -94,14 +120,6 @@ print('POPMN: ' + str(testcrop['ROPMN']))
 print('POPMX: ' + str(testcrop['ROPMX']))
 print('SOIL: ' + str(SOIL))
 sys.stdout.flush()
-
-########## STAGE 1 & 2 ############
-#
-# For the KTMP, KMAX and PREC calcs, we can use the pre-calculated
-# cumulative sums that are saved on disk
-#
-# For the TEMP calculation we have to read in the metdata from scratch
-# as there are too many permutations to pre-calc it beforehand
 
 if not os.path.exists(savedir):
     os.makedirs(savedir)
@@ -116,16 +134,36 @@ tas = xr.open_mfdataset(taspath).astype('float16')[tasvname]
 tmn = xr.open_mfdataset(tmnpath).astype('float16')[tmnvname]
 tmx = xr.open_mfdataset(tmxpath).astype('float16')[tmxvname]
 pre = xr.open_mfdataset(prepath)[prevname]
-tas = tas.sel(time=slice('2020-01-01', tas['time'][-1])).load()
-tmn = tmn.sel(time=slice('2020-01-01', tmn['time'][-1])).load()
-tmx = tmx.sel(time=slice('2020-01-01', tmx['time'][-1])).load()
-pre = pre.sel(time=slice('2020-01-01', pre['time'][-1])).load()
+if pf == 'past':
+    tas = tas.sel(time=slice(tas['time'][0], '2021-01-01')).load()
+    tmn = tmn.sel(time=slice(tmn['time'][0], '2021-01-01')).load()
+    tmx = tmx.sel(time=slice(tmx['time'][0], '2021-01-01')).load()
+    pre = pre.sel(time=slice(pre['time'][0], '2021-01-01')).load()
+elif pf == 'future':
+    tas = tas.sel(time=slice('2020-01-01', tas['time'][-1])).load()
+    tmn = tmn.sel(time=slice('2020-01-01', tmn['time'][-1])).load()
+    tmx = tmx.sel(time=slice('2020-01-01', tmx['time'][-1])).load()
+    pre = pre.sel(time=slice('2020-01-01', pre['time'][-1])).load()
+else:
+    print('Past or future not selected so loading entire dataset')
+    tas = tas.load()
+    tmn = tmn.load()
+    tmx = tmx.load()
+    pre = pre.load()
+
+tastime = tas['time']
+tasy    = tas['y']
+tasx    = tas['x']
+
+if method == 'perennial':
+    tas = tas.values
 print('End: ' + str(dt.datetime.now()))
 
 print('Calculating topt_, ktmp_ and kmax_crop')
 print('Start: ' + str(dt.datetime.now()))
 sys.stdout.flush()
-topt_crop = xr.where(xr.ufuncs.logical_and(tas < TOPMAX, tas > TOPMIN), 1, 0).astype('uint16').values
+if method == 'annual':
+    topt_crop = score_temp2(tas, TMIN, TMAX, TOPMIN, TOPMAX).values
 ktmp_crop = xr.where(tmn < KTMP, 1, 0).astype('uint16').values
 kmax_crop = xr.where(tmx > KMAX, 1, 0).astype('uint16').values
 print('End: ' + str(dt.datetime.now()))
@@ -137,76 +175,6 @@ else:
     gstart = np.int16(np.ceil(GMIN/10)*10)
 gend   = np.int16(np.ceil(GMAX/10)*10)
 allgtimes = list(np.arange(gstart, gend, 10, dtype='int16'))
-
-
-# First check if any files are missing or corrupted and skip those gtimes
-#allfilescounter=0
-#missingfilescounter=0
-#missingfiles = []
-#missinggtimes = []
-#print('Checking availability of files')
-#for gtime in allgtimes:
-#
-#    kmaxfname = 'KMAX_' + str(int(testcrop['TMAX'])) + \
-#                '_gtime_' + str(int(gtime)) + 'v2.nc'
-#    print('Checking ' + kmaxfname)
-#    kmaxpath = os.path.join(predir, kmaxfname)
-#    if not os.path.exists(kmaxpath):
-#        print(kmaxfname + ' does not exist')
-#        missingfilescounter+=1    
-#        missingfiles.append(kmaxfname)
-#        missinggtimes.append(gtime)
-#    elif np.all(xr.open_dataarray(kmaxpath)[-1,:,:].values==65535):
-#        print(kmaxfname + ' file is corrupted')
-#        missingfilescounter+=1
-#        missingfiles.append(kmaxfname)
-#        missinggtimes.append(gtime)
-#    elif np.all(xr.open_dataarray(kmaxpath)[-1,:,:].values==0):
-#        print(kmaxfname + ' file is corrupted')
-#        missingfilescounter+=1
-#        missingfiles.append(kmaxfname)
-#        missinggtimes.append(gtime)
-#    allfilescounter+=1
-#
-#    ktmpfname = 'KTMP_' + str(int(testcrop['KTMPR'])) + \
-#                '_gtime_' + str(int(gtime)) + 'v2.nc'
-#    print('Checking ' + ktmpfname)
-#    ktmppath = os.path.join(predir, ktmpfname)
-#    if not os.path.exists(ktmppath):
-#        print(ktmpfname + ' does not exist')
-#        missingfilescounter+=1    
-#        missingfiles.append(ktmpfname)
-#        missinggtimes.append(gtime)
-#    elif np.all(xr.open_dataarray(ktmppath)[-1,:,:].values==65535):
-#        print(ktmpfname + ' file is corrupted')
-#        missingfilescounter+=1
-#        missingfiles.append(ktmpfname)  
-#        missinggtimes.append(gtime)
-#    elif np.all(xr.open_dataarray(ktmppath)[-1,:,:].values==0):
-#        print(ktmpfname + ' file is corrupted')
-#        missingfiles.append(ktmpfname)   
-#        missinggtimes.append(gtime)
-#         missingfilescounter+=1
-#    allfilescounter+=1
-#
-#    precfname = 'PREC_' + \
-#                'gtime_' + str(int(gtime)) + 'v2.nc'
-#    precpath = os.path.join(predir, precfname)
-#    if not os.path.exists(precpath):
-#        print(precfname + ' does not exist')
-#        missingfilescounter+=1        
-#    allfilescounter+=1
-#
-#
-#missinggtimes = list(np.unique(np.asarray(missinggtimes)))
-#print(str(missingfilescounter) + ' of ' + str(allfilescounter) + ' missing or corrupted: ')
-#print(missingfiles)
-#print('\n')
-#print('The following gtimes have missing or corrupted files: ')
-#print(missinggtimes)
-#
-#for mgt in missinggtimes:
-#    allgtimes.remove(mgt)
 
 # create arrays to store the total proportion of ktmp/kmax days amassed over all the gtimes
 # for later calculating the average
@@ -229,15 +197,24 @@ for gtime in allgtimes:
           ' out of a maximum of ' + str(int(GMAX)))
     print('Start: ' + str(dt.datetime.now()))
     
-    print('Calculating ndays of T in optimal range within gtime')
+    print('Calculating T suitability')
     sys.stdout.flush()
+    if method == 'annual':
+        tscore1 = score_temp(gtime, GMIN, GMAX).astype('uint8')
     # calculate ndays of T in optimal range within gtime
-    tcoords_tas = tas['time'][:-gtime+1]
-    ycoords_tas = tas['y']
-    xcoords_tas = tas['x']
-    toptdays = frs3D(topt_crop, gtime, 'uint16')
+    tcoords_tas = tastime[:-gtime+1]
+    ycoords_tas = tasy
+    xcoords_tas = tasx
+    if method == 'annual':
+        toptdays = (frs3D(topt_crop, gtime, 'float32')).round().astype('uint16')
+    elif method == 'perennial':
+        toptdays = (frs3D(tas, gtime, 'float32')/gtime).round().astype('uint16')
     toptdays = xr.DataArray(toptdays, coords=[tcoords_tas, ycoords_tas, xcoords_tas])
     toptdays.name = 'TOPT_days'
+    if method == 'annual':
+        tscore = xr.where(toptdays >= GMIN, tscore1, np.uint8(0))
+    elif method == 'perennial':
+        tscore = score_temp4(toptdays, TMIN, TMAX, TOPMIN, TOPMAX)
     print('End: ' + str(dt.datetime.now())) 
 
     # calculate whether any of the suitable days/locations identified above will have
@@ -282,56 +259,19 @@ for gtime in allgtimes:
     precip_crop.name = 'precip_total'
     print('End: ' + str(dt.datetime.now())) 
 
-    ########### STAGE 3 #############
-
-    print('Calculating where T suitable within GTIME')
+    print('Processing KTMP')
     print('Start: ' + str(dt.datetime.now()))
     sys.stdout.flush()
-    suit_crop = xr.where(toptdays >= GMIN, 1, 0).astype('uint8')
+    tempscore = xr.where(ktmp_days > np.uint8(0), np.uint8(0), tscore)
     print('End: ' + str(dt.datetime.now())) 
 
-    # if they are different lengths it will likely be because the end of the data is missing
-    # (due to a minor bug in the frs3D functions), so need to account for this
-    #print('Calculating KMAX')
-    #kmaxfname = 'KMAX_' + str(int(testcrop['TMAX'])) + \
-    #            '_gtime_' + str(int(gtime)) + 'v2.nc'
-    #kmaxpath = os.path.join(predir, kmaxfname)
-    #kmax_days = xr.open_dataset(kmaxpath)['KMAXdays'].astype('uint16')
-    #if len(kmax_days['time']) > len(suit_crop['time']):
-    #    kmax_days = kmax_days.sel(time=slice(suit_crop['time'][0], suit_crop['time'][-1]))
-    #elif len(kmax_days['time']) < len(suit_crop['time']):
-    #    suit_crop = suit_crop.sel(time=slice(kmax_days['time'][0], kmax_days['time'][-1]))
-    #suit_crop2 = xr.where(kmax_days > np.uint8(0), suit_crop - np.uint8(kmax_days), suit_crop)
-
-    print('Masking based on KTMP')
+    print('Processing KMAX days penalty')
     print('Start: ' + str(dt.datetime.now()))
     sys.stdout.flush()
-    #ktmpfname = 'KTMP_' + str(int(testcrop['KTMPR'])) + \
-    #            '_gtime_' + str(int(gtime)) + 'v2.nc'
-    #ktmppath = os.path.join(predir, ktmpfname)
-    #ktmp_days = xr.open_dataset(ktmppath)['KTMPdays'].astype('uint16')
-    #if len(ktmp_days['time']) > len(suit_crop2['time']):
-    #    ktmp_days = ktmp_days.sel(time=slice(suit_crop2['time'][0], suit_crop2['time'][-1]))
-    #elif len(ktmp_days['time']) < len(suit_crop2['time']):
-    #    suit_crop2 = suit_crop2.sel(time=slice(ktmp_days['time'][0], ktmp_days['time'][-1]))
-    suit_crop2 = xr.where(ktmp_days > np.uint8(0), np.uint8(0), suit_crop)
-    print('End: ' + str(dt.datetime.now())) 
-
-    print('Calculating T suitability score and KMAX days penalty')
-    print('Start: ' + str(dt.datetime.now()))
-    sys.stdout.flush()
-    tscore = score_temp(gtime, GMIN, GMAX)
-    tempscore1 = xr.where(suit_crop2 > np.uint8(0), tscore, np.uint8(0)).astype('int8')
-    kmax_days = xr.where(suit_crop2 > np.uint8(0), kmax_days, np.uint(0))
-    tempscore = tempscore1 - np.int8(kmax_days)
+    tempscore = tempscore - np.int8(kmax_days)
     tempscore = xr.where(tempscore < 0, 0, tempscore).astype('uint8')
     print('End: ' + str(dt.datetime.now())) 
 
-    #precfname = 'PREC_' + \
-    #            'gtime_' + str(int(gtime)) + 'v2.nc'
-    #precpath = os.path.join(predir, precfname)
-    #print('Loading prec file')
-    #precip_crop = xr.open_dataset(precpath)['PRECtotal'].astype('float16')
     print('Calculating precip suitability score using method ' + str(precmethod))
     print('Start: ' + str(dt.datetime.now()))
     sys.stdout.flush()
@@ -360,9 +300,7 @@ for gtime in allgtimes:
         precscore = xr.where(precscore > precscore_old, precscore, precscore_old)#.astype('uint8')
         tempscore_old = tempscore
         precscore_old = precscore
-
-        del suit_crop
-        del suit_crop2
+        
         print('End: ' + str(dt.datetime.now())) 
         sys.stdout.flush()
     counter+=1
@@ -447,14 +385,14 @@ print('Calculating monthly climo of ktmp/kmax proportions and decadal changes')
 sys.stdout.flush()
 ktmpap_monavg_climo_diffs, kmaxap_monavg_climo_diffs = \
 calc_decadal_kprop_changes(ktmp_days_avg_prop, kmax_days_avg_prop, str(SOIL), lcmloc, bgsloc, cropname, savedir)
-for month in range(1, 13):
-    plot_decadal_changes(kmaxap_monavg_climo_diffs.sel(month=month), 
-                         save=os.path.join(plotdir, cropname + '_kmaxdaysprop_decadal_change_month' + str(month) + '.png'),
-                         revcolbar = 1)
-for month in range(1, 13):
-    plot_decadal_changes(ktmpap_monavg_climo_diffs.sel(month=month), 
-                         save=os.path.join(plotdir, cropname + '_ktmpdaysprop_decadal_change_month' + str(month) + '.png'),
-                         revcolbar = 1)
+#for month in range(1, 13):
+#    plot_decadal_changes(kmaxap_monavg_climo_diffs.sel(month=month), 
+#                         save=os.path.join(plotdir, cropname + '_kmaxdaysprop_decadal_change_month' + str(month) + '.png'),
+#                         revcolbar = 1)
+#for month in range(1, 13):
+#    plot_decadal_changes(ktmpap_monavg_climo_diffs.sel(month=month), 
+#                         save=os.path.join(plotdir, cropname + '_ktmpdaysprop_decadal_change_month' + str(month) + '.png'),
+#                         revcolbar = 1)
 
 # calculate day of year of maximum score
 print('Finding days of years of the maximum score')
@@ -464,16 +402,16 @@ print('Calculating yearly average of this and decadal changes using modulo arith
 sys.stdout.flush()
 maxdoys_decadal_changes, maxdoys_temp_decadal_changes, maxdoys_prec_decadal_changes = \
 calc_decadal_doy_changes(maxdoys, maxdoys_temp, maxdoys_prec, str(SOIL), lcmloc, bgsloc, cropname, savedir)
-plot_decadal_changes(maxdoys_decadal_changes, save=os.path.join(plotdir, cropname + '_maxdoys_decadal_changes.png'))
-plot_decadal_changes(maxdoys_temp_decadal_changes, save=os.path.join(plotdir, cropname + '_maxdoys_temp_decadal_changes.png'))
-plot_decadal_changes(maxdoys_prec_decadal_changes, save=os.path.join(plotdir, cropname + '_maxdoys_prec_decadal_changes.png'))
+#plot_decadal_changes(maxdoys_decadal_changes, save=os.path.join(plotdir, cropname + '_maxdoys_decadal_changes.png'))
+#plot_decadal_changes(maxdoys_temp_decadal_changes, save=os.path.join(plotdir, cropname + '_maxdoys_temp_decadal_changes.png'))
+#plot_decadal_changes(maxdoys_prec_decadal_changes, save=os.path.join(plotdir, cropname + '_maxdoys_prec_decadal_changes.png'))
 
 # calculate yearly scores and decadal changes
 print('Calculating yearly scores and decadal changes')
 sys.stdout.flush()
 allscore_decades, tempscore_decades, precscore_decades, allscore_decadal_changes, tempscore_decadal_changes, precscore_decadal_changes = \
 calc_decadal_changes(tempscore, precscore, str(SOIL), lcmloc, bgsloc, cropname, savedir, yearaggmethod)
-plot_decadal_changes(allscore_decadal_changes, save=os.path.join(plotdir, cropname + '_decadal_changes.png'))
-plot_decadal_changes(tempscore_decadal_changes, save=os.path.join(plotdir, cropname + '_tempscore_decadal_changes.png'))
-plot_decadal_changes(precscore_decadal_changes, save=os.path.join(plotdir, cropname + '_precscore_decadal_changes.png'))
+#plot_decadal_changes(allscore_decadal_changes, save=os.path.join(plotdir, cropname + '_decadal_changes.png'))
+#plot_decadal_changes(tempscore_decadal_changes, save=os.path.join(plotdir, cropname + '_tempscore_decadal_changes.png'))
+#plot_decadal_changes(precscore_decadal_changes, save=os.path.join(plotdir, cropname + '_precscore_decadal_changes.png'))
 plot_decade(allscore_decades[0,:,:], tempscore_decades[0,:,:], precscore_decades[0,:,:], save=os.path.join(plotdir, cropname + '_current_decade.png'))

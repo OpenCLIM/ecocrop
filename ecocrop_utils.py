@@ -1,10 +1,8 @@
 import os
-import pandas as pd
 import xarray as xr
 import numpy  as np
 import cartopy as cp
-from numba import njit
-import geopandas as gpd
+import netCDF4 as nc4
 import matplotlib.pyplot as plt
 
 def circular_avg(maxdoys, dim):
@@ -47,12 +45,18 @@ def lcm_mask(lcm, data):
         if lcm[-3:]=='tif':
             lcm = xr.open_rasterio(lcm)
             lcm = lcm.drop('band').squeeze()
-            if lcm['y'].values[0] < lcm['y'].values[1]:
-                lcm=lcm[::-1,:]
         else:
             lcm = xr.open_dataarray(lcm)
+    
     dataxlims = [data['x'].values[0], data['x'].values[-1]]
     dataylims = [data['y'].values[0], data['y'].values[-1]]
+    lcmylims = [lcm['y'].values[0], lcm['y'].values[-1]]
+    if dataylims[0] < dataylims[1]:
+        if lcmylims[0] > lcmylims[1]:
+            lcm=lcm[::-1,:]
+    elif dataylims[0] > dataylims[1]:
+        if lcmylims[0] < lcmylims[1]:
+            lcm=lcm[::-1,:]
     
     lcm_cropped = lcm.sel(x=slice(dataxlims[0], dataxlims[1]), 
                           y=slice(dataylims[0], dataylims[1]))
@@ -62,6 +66,25 @@ def lcm_mask(lcm, data):
     data_masked.values = data_masked_npy
     return data_masked
 
+def lcm_mask_xr(lcm, data):
+    if type(lcm)==str:
+        if lcm[-3:]=='tif':
+            lcm = xr.open_rasterio(lcm)
+            lcm = lcm.drop('band').squeeze()
+        else:
+            lcm = xr.open_dataarray(lcm)
+    
+    dataxlims = [data['x'].values[0], data['x'].values[-1]]
+    dataylims = [data['y'].values[0], data['y'].values[-1]]
+    if dataylims[0] < dataylims[1]:
+        lcm=lcm[::-1,:]
+    
+    lcm_cropped = lcm.sel(x=slice(dataxlims[0], dataxlims[1]), 
+                          y=slice(dataylims[0], dataylims[1]))
+    
+    data_masked = xr.where(lcm_cropped>0, data, 0)
+    return data_masked
+
 # Mask based on soil type, using a soil type mask in netcdf format
 def soil_type_mask(mask, data):
     dataxlims = [data['x'].values[0], data['x'].values[-1]]
@@ -69,8 +92,12 @@ def soil_type_mask(mask, data):
     
     if type(mask)==str:
         mask = xr.open_dataarray(mask)
-    mask_cropped = mask.sel(x=slice(dataxlims[0], dataxlims[1]), 
-                            y=slice(dataylims[0], dataylims[1]))
+        # this dtype conversion is to get around the case where the coordinates might
+        # be in different dtypes to the datalims, sometimes causing an error
+        xdtype = mask.x.dtype
+        ydtype = mask.y.dtype
+    mask_cropped = mask.sel(x=slice(dataxlims[0].astype(xdtype), dataxlims[1].astype(xdtype)), 
+                            y=slice(dataylims[0].astype(ydtype), dataylims[1].astype(ydtype)))
     
     data_masked_npy = np.where(mask_cropped.values>0, data.values, 0)
     data_masked = data.copy()
@@ -81,15 +108,31 @@ def soil_type_mask(mask, data):
 def soil_type_mask_all(data, SOIL, maskloc):
     # apply the masking function for all the soil types
     # dependent on which the crop grows in (SOIL)
-    if 'light' in SOIL:
+    if 'heavy' in SOIL and 'medium' in SOIL and 'light' in SOIL:
+        print('Doing masking for all soil groups')
+        maskfile = os.path.join(maskloc, 'all_soil_mask.nc')
+        data = soil_type_mask(maskfile, data)
+    elif 'heavy' in SOIL and 'medium' in SOIL:
+        print('Doing masking for heavy and medium soil groups')
+        maskfile = os.path.join(maskloc, 'heavy_med_soil_mask.nc')
+        data = soil_type_mask(maskfile, data)
+    elif 'heavy' in SOIL and 'light' in SOIL:
+        print('Doing masking for light and heavy soil groups')
+        maskfile = os.path.join(maskloc, 'heavy_light_soil_mask.nc')
+        data = soil_type_mask(maskfile, data)
+    elif 'medium' in SOIL and 'light' in SOIL:
+        print('Doing masking for light and medium soil groups')
+        maskfile = os.path.join(maskloc, 'med_light_soil_mask.nc')
+        data = soil_type_mask(maskfile, data)
+    elif 'light' in SOIL:
         print('Doing masking for light soil group')
         maskfile = os.path.join(maskloc, 'light_soil_mask.nc')
         data = soil_type_mask(maskfile, data)
-    if 'medium' in SOIL:
+    elif 'medium' in SOIL:
         print('Doing masking for medium soil group')
         maskfile = os.path.join(maskloc, 'medium_soil_mask.nc')
         data = soil_type_mask(maskfile, data)
-    if 'heavy' in SOIL:
+    elif 'heavy' in SOIL:
         print('Doing masking for heavy soil group')
         maskfile = os.path.join(maskloc, 'heavy_soil_mask.nc')
         data = soil_type_mask(maskfile, data)
@@ -158,8 +201,11 @@ def calc_decadal_changes(tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, o
     elif yearaggmethod == 'mean':
         tempscore_years = tempscore.groupby('time.year').mean()
         precscore_years = precscore.groupby('time.year').mean()
+    elif yearaggmethod == 'percentile':
+        tempscore_years = tempscore.groupby('time.year').quantile(0.95)
+        precscore_years = precscore.groupby('time.year').quantile(0.95)
     else:
-        raise SyntaxError("yearaggmethod must be one of max, median or mean")
+        raise SyntaxError("yearaggmethod must be one of max, median, mean or percentile")
     allscore_years = xr.where(precscore_years < tempscore_years, precscore_years, tempscore_years)
 
     print('Doing masking')
@@ -173,10 +219,35 @@ def calc_decadal_changes(tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, o
     allscore_years  = soil_type_mask_all(allscore_years,  SOIL, sgmloc)
     tempscore_years = soil_type_mask_all(tempscore_years, SOIL, sgmloc)
     precscore_years = soil_type_mask_all(precscore_years, SOIL, sgmloc)
+
+    # compress and save to disk
     allscore_years.name = 'crop_suitability_score'
-    allscore_years.to_netcdf(os.path.join(outdir, cropname + '_years.nc'))
-    tempscore_years.to_netcdf(os.path.join(outdir, cropname + '_tempscore_years.nc'))
-    precscore_years.to_netcdf(os.path.join(outdir, cropname + '_precscore_years.nc'))
+    allscore_years.encoding['zlib'] = True
+    allscore_years.encoding['complevel'] = 1
+    allscore_years.encoding['shuffle'] = False
+    allscore_years.encoding['contiguous'] = False
+    allscore_years.encoding['dtype'] = np.dtype('uint8')
+    encoding = {}
+    encoding['crop_suitability_score'] = allscore_years.encoding
+    allscore_years.to_netcdf(os.path.join(outdir, cropname + '_years.nc'), encoding=encoding)
+
+    tempscore_years.encoding['zlib'] = True
+    tempscore_years.encoding['complevel'] = 1
+    tempscore_years.encoding['shuffle'] = False
+    tempscore_years.encoding['contiguous'] = False
+    tempscore_years.encoding['dtype'] = np.dtype('uint8')
+    encoding = {}
+    encoding['temperature_suitability_score'] = tempscore_years.encoding
+    tempscore_years.to_netcdf(os.path.join(outdir, cropname + '_tempscore_years.nc'), encoding=encoding)
+    
+    precscore_years.encoding['zlib'] = True
+    precscore_years.encoding['complevel'] = 1
+    precscore_years.encoding['shuffle'] = False
+    precscore_years.encoding['contiguous'] = False
+    precscore_years.encoding['dtype'] = np.dtype('uint8')
+    encoding = {}
+    encoding['precip_suitability_score'] = precscore_years.encoding
+    precscore_years.to_netcdf(os.path.join(outdir, cropname + '_precscore_years.nc'), encoding=encoding)
 
     print('Calculating decadal score')
     # crop suitability score for a given decade is the mean
@@ -184,14 +255,17 @@ def calc_decadal_changes(tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, o
     allscore_decades = []
     tempscore_decades = []
     precscore_decades = []
-    for idx in range(0, 60, 10):
+    syear = allscore_years['year'][0].values
+    nyears = allscore_years.shape[0]
+    nyears_u = int(np.floor(nyears/10)*10)
+    for idx in range(0, nyears_u, 10):
         allscore_decade  = allscore_years[idx:idx+10,:,:].mean(dim='year')
         tempscore_decade = tempscore_years[idx:idx+10,:,:].mean(dim='year')
         precscore_decade = precscore_years[idx:idx+10,:,:].mean(dim='year')
         
-        allscore_decade  = allscore_decade.expand_dims({'decade': [2020+idx]})
-        tempscore_decade = tempscore_decade.expand_dims({'decade': [2020+idx]})
-        precscore_decade = precscore_decade.expand_dims({'decade': [2020+idx]})
+        allscore_decade  = allscore_decade.expand_dims({'decade': [syear+idx]})
+        tempscore_decade = tempscore_decade.expand_dims({'decade': [syear+idx]})
+        precscore_decade = precscore_decade.expand_dims({'decade': [syear+idx]})
         
         allscore_decades.append(allscore_decade)
         tempscore_decades.append(tempscore_decade)
@@ -199,14 +273,42 @@ def calc_decadal_changes(tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, o
     allscore_decades  = xr.merge(allscore_decades)['crop_suitability_score']
     tempscore_decades = xr.merge(tempscore_decades)['temperature_suitability_score']
     precscore_decades = xr.merge(precscore_decades)['precip_suitability_score']
-    allscore_decades.to_netcdf(os.path.join(outdir, cropname + '_decades.nc'))
-    tempscore_decades.to_netcdf(os.path.join(outdir, cropname + '_tempscore_decades.nc'))
-    precscore_decades.to_netcdf(os.path.join(outdir, cropname + '_precscore_decades.nc'))
 
+    # compress and save to disk
+    allscore_decades.name = 'crop_suitability_score'
+    allscore_decades.encoding['zlib'] = True
+    allscore_decades.encoding['complevel'] = 1
+    allscore_decades.encoding['shuffle'] = False
+    allscore_decades.encoding['contiguous'] = False
+    allscore_decades.encoding['dtype'] = np.dtype('int8')
+    encoding = {}
+    encoding['crop_suitability_score'] = allscore_decades.encoding
+    allscore_decades.to_netcdf(os.path.join(outdir, cropname + '_decades.nc'), encoding=encoding)
+
+    tempscore_decades.encoding['zlib'] = True
+    tempscore_decades.encoding['complevel'] = 1
+    tempscore_decades.encoding['shuffle'] = False
+    tempscore_decades.encoding['contiguous'] = False
+    tempscore_decades.encoding['dtype'] = np.dtype('int8')
+    encoding = {}
+    encoding['temperature_suitability_score'] = tempscore_decades.encoding
+    tempscore_decades.to_netcdf(os.path.join(outdir, cropname + '_tempscore_decades.nc'), encoding=encoding)
+
+    precscore_decades.encoding['zlib'] = True
+    precscore_decades.encoding['complevel'] = 1
+    precscore_decades.encoding['shuffle'] = False
+    precscore_decades.encoding['contiguous'] = False
+    precscore_decades.encoding['dtype'] = np.dtype('int8')
+    encoding = {}
+    encoding['precip_suitability_score'] = precscore_decades.encoding
+    precscore_decades.to_netcdf(os.path.join(outdir, cropname + '_precscore_decades.nc'), encoding=encoding)
+
+    # decadal changes
     allscore_decadal_changes = allscore_decades.copy()[1:,:,:]
     tempscore_decadal_changes = tempscore_decades.copy()[1:,:,:]
     precscore_decadal_changes = precscore_decades.copy()[1:,:,:]
-    for dec in range(1,6):
+    decs = allscore_decades.shape[0]
+    for dec in range(1,decs):
         allscore_decadal_changes[dec-1,:,:] = allscore_decades[dec,:,:] - \
                                               allscore_decades[0,:,:]
         tempscore_decadal_changes[dec-1,:,:] = tempscore_decades[dec,:,:] - \
@@ -235,25 +337,53 @@ def calc_decadal_doy_changes(maxdoys, maxdoys_temp, maxdoys_prec, SOIL, LCMloc, 
     maxdoys       = soil_type_mask_all(maxdoys,  SOIL, sgmloc)
     maxdoys_temp  = soil_type_mask_all(maxdoys_temp,  SOIL, sgmloc)
     maxdoys_prec  = soil_type_mask_all(maxdoys_prec,  SOIL, sgmloc)
-    # save to disk
-    maxdoys.to_netcdf(os.path.join(outdir, cropname + '_max_score_doys.nc'))
-    maxdoys_temp.to_netcdf(os.path.join(outdir, cropname + '_max_tempscore_doys.nc'))
+    # compress and save to disk
+    maxdoys.encoding['zlib'] = True
+    maxdoys.encoding['complevel'] = 1
+    maxdoys.encoding['shuffle'] = False
+    maxdoys.encoding['contiguous'] = False
+    maxdoys.encoding['dtype'] = np.dtype('uint16')
+    encoding = {}
+    encoding['dayofyear'] = maxdoys.encoding
+    maxdoys.to_netcdf(os.path.join(outdir, cropname + '_max_score_doys.nc'), encoding=encoding)
+
+    maxdoys_temp.encoding['zlib'] = True
+    maxdoys_temp.encoding['complevel'] = 1
+    maxdoys_temp.encoding['shuffle'] = False
+    maxdoys_temp.encoding['contiguous'] = False
+    maxdoys_temp.encoding['dtype'] = np.dtype('int16')
+    encoding = {}
+    encoding['dayofyear'] = maxdoys_temp.encoding
+    maxdoys_temp.to_netcdf(os.path.join(outdir, cropname + '_max_tempscore_doys.nc'), encoding=encoding)
+
     maxdoys_prec.to_netcdf(os.path.join(outdir, cropname + '_max_precscore_doys.nc'))
+    maxdoys_prec.encoding['zlib'] = True
+    maxdoys_prec.encoding['complevel'] = 1
+    maxdoys_prec.encoding['shuffle'] = False
+    maxdoys_prec.encoding['contiguous'] = False
+    maxdoys_prec.encoding['dtype'] = np.dtype('int16')
+    encoding = {}
+    encoding['dayofyear'] = maxdoys_prec.encoding
+    maxdoys_prec.to_netcdf(os.path.join(outdir, cropname + '_max_precscore_doys.nc'), encoding=encoding)
+
 
     # calculate the decadal averages, using circular averaging
     maxdoys_decades = []
     maxdoys_temp_decades = []
     maxdoys_prec_decades = []
-    for idx in range(0, 60, 10):
+    syear = maxdoys['year'][0].values
+    nyears = maxdoys.shape[0]
+    nyears_u = int(np.floor(nyears/10)*10)
+    for idx in range(0, nyears_u, 10):
         maxdoys_decade       = maxdoys[idx:idx+10,:,:]
         maxdoys_temp_decade  = maxdoys_temp[idx:idx+10,:,:]
         maxdoys_prec_decade  = maxdoys_prec[idx:idx+10,:,:]
         maxdoys_decade       = circular_avg(maxdoys_decade, 'year')
         maxdoys_temp_decade  = circular_avg(maxdoys_temp_decade, 'year')
         maxdoys_prec_decade  = circular_avg(maxdoys_prec_decade, 'year')
-        maxdoys_decade       = maxdoys_decade.expand_dims({'decade': [2020+idx]})
-        maxdoys_temp_decade  = maxdoys_temp_decade.expand_dims({'decade': [2020+idx]})
-        maxdoys_prec_decade  = maxdoys_prec_decade.expand_dims({'decade': [2020+idx]})
+        maxdoys_decade       = maxdoys_decade.expand_dims({'decade': [syear+idx]})
+        maxdoys_temp_decade  = maxdoys_temp_decade.expand_dims({'decade': [syear+idx]})
+        maxdoys_prec_decade  = maxdoys_prec_decade.expand_dims({'decade': [syear+idx]})
         maxdoys_decades.append(maxdoys_decade)
         maxdoys_temp_decades.append(maxdoys_temp_decade)
         maxdoys_prec_decades.append(maxdoys_prec_decade)
@@ -269,7 +399,8 @@ def calc_decadal_doy_changes(maxdoys, maxdoys_temp, maxdoys_prec, SOIL, LCMloc, 
     maxdoys_decadal_changes      = maxdoys_decades.copy()[1:,:,:]
     maxdoys_temp_decadal_changes = maxdoys_temp_decades.copy()[1:,:,:]
     maxdoys_prec_decadal_changes = maxdoys_prec_decades.copy()[1:,:,:]
-    for dec in range(1,6):
+    decs = maxdoys_decades.shape[0]
+    for dec in range(1,decs):
         maxdoys_decadal_changes[dec-1,:,:] = (maxdoys_decades[dec,:,:] - \
                                               maxdoys_decades[0,:,:])
         maxdoys_temp_decadal_changes[dec-1,:,:] = (maxdoys_temp_decades[dec,:,:] - \
@@ -309,38 +440,76 @@ def calc_decadal_kprop_changes(ktmpap, kmaxap, SOIL, LCMloc, sgmloc, cropname, o
     kmaxap_monavg = soil_type_mask_all(kmaxap_monavg,  SOIL, sgmloc)
     
     # calculate monthly climatologies for each decade
-    ktmpap_monavg_climo1 = ktmpap_monavg[:120,:,:].groupby('time.month').mean().expand_dims({'decade': [2020]})
-    ktmpap_monavg_climo2 = ktmpap_monavg[120:240,:,:].groupby('time.month').mean().expand_dims({'decade': [2030]})
-    ktmpap_monavg_climo3 = ktmpap_monavg[240:360,:,:].groupby('time.month').mean().expand_dims({'decade': [2040]})
-    ktmpap_monavg_climo4 = ktmpap_monavg[360:480,:,:].groupby('time.month').mean().expand_dims({'decade': [2050]})
-    ktmpap_monavg_climo5 = ktmpap_monavg[480:600,:,:].groupby('time.month').mean().expand_dims({'decade': [2060]})
-    ktmpap_monavg_climo6 = ktmpap_monavg[600:,:,:].groupby('time.month').mean().expand_dims({'decade': [2070]})
-    kmaxap_monavg_climo1 = kmaxap_monavg[:120,:,:].groupby('time.month').mean().expand_dims({'decade': [2020]})
-    kmaxap_monavg_climo2 = kmaxap_monavg[120:240,:,:].groupby('time.month').mean().expand_dims({'decade': [2030]})
-    kmaxap_monavg_climo3 = kmaxap_monavg[240:360,:,:].groupby('time.month').mean().expand_dims({'decade': [2040]})
-    kmaxap_monavg_climo4 = kmaxap_monavg[360:480,:,:].groupby('time.month').mean().expand_dims({'decade': [2050]})
-    kmaxap_monavg_climo5 = kmaxap_monavg[480:600,:,:].groupby('time.month').mean().expand_dims({'decade': [2060]})
-    kmaxap_monavg_climo6 = kmaxap_monavg[600:,:,:].groupby('time.month').mean().expand_dims({'decade': [2070]})
+    ktmpap_monavg_climos = []
+    kmaxap_monavg_climos = []
+    nyears = ktmpap_monavg.shape[0] // 12
+    ndecs = int(np.round(nyears, -1)/10)
+    for d in range(0, ndecs):
+        sind = d*120
+        eind = (d+1)*120
+        year = ktmpap_monavg['time'][sind].dt.year
+        if eind >= ktmpap_monavg.shape[0]:
+            ktmpap_monavg_climo = ktmpap_monavg[sind:,:,:].groupby('time.month').mean().expand_dims({'decade': [year]})
+            kmaxap_monavg_climo = kmaxap_monavg[sind:,:,:].groupby('time.month').mean().expand_dims({'decade': [year]})
+            ktmpap_monavg_climos.append(ktmpap_monavg_climo)
+            kmaxap_monavg_climos.append(kmaxap_monavg_climo)
+        else:
+            ktmpap_monavg_climo = ktmpap_monavg[sind:eind,:,:].groupby('time.month').mean().expand_dims({'decade': [year]})
+            kmaxap_monavg_climo = kmaxap_monavg[sind:eind,:,:].groupby('time.month').mean().expand_dims({'decade': [year]})
+            ktmpap_monavg_climos.append(ktmpap_monavg_climo)
+            kmaxap_monavg_climos.append(kmaxap_monavg_climo)
     
-    ktmpap_monavg_climos = xr.concat([ktmpap_monavg_climo1, ktmpap_monavg_climo2, ktmpap_monavg_climo3,
-                                      ktmpap_monavg_climo4, ktmpap_monavg_climo5, ktmpap_monavg_climo6],
+    ktmpap_monavg_climos2 = xr.concat(ktmpap_monavg_climos,
                                       dim='decade')
-    kmaxap_monavg_climos = xr.concat([kmaxap_monavg_climo1, kmaxap_monavg_climo2, kmaxap_monavg_climo3,
-                                      kmaxap_monavg_climo4, kmaxap_monavg_climo5, kmaxap_monavg_climo6],
+    kmaxap_monavg_climos2 = xr.concat(kmaxap_monavg_climos,
                                       dim='decade')
-    ktmpap_monavg_climos.to_netcdf(os.path.join(outdir, cropname + '_ktmpdaysavgprop_decades.nc'))    
-    kmaxap_monavg_climos.to_netcdf(os.path.join(outdir, cropname + '_kmaxdaysavgprop_decades.nc'))    
+    # compress and save to disk
+    ktmpap_monavg_climos2.encoding['zlib'] = True
+    ktmpap_monavg_climos2.encoding['complevel'] = 1
+    ktmpap_monavg_climos2.encoding['shuffle'] = False
+    ktmpap_monavg_climos2.encoding['contiguous'] = False
+    ktmpap_monavg_climos2.encoding['dtype'] = np.dtype('float32')
+    encoding = {}
+    encoding['average_proportion_of_ktmp_days_in_gtime'] = ktmpap_monavg_climos2.encoding
+    ktmpap_monavg_climos2.to_netcdf(os.path.join(outdir, cropname + '_ktmpdaysavgprop_decades.nc'), encoding=encoding)
+
+    kmaxap_monavg_climos2.encoding['zlib'] = True
+    kmaxap_monavg_climos2.encoding['complevel'] = 1
+    kmaxap_monavg_climos2.encoding['shuffle'] = False
+    kmaxap_monavg_climos2.encoding['contiguous'] = False
+    kmaxap_monavg_climos2.encoding['dtype'] = np.dtype('float32')
+    encoding = {}
+    encoding['average_proportion_of_kmax_days_in_gtime'] = kmaxap_monavg_climos2.encoding
+    kmaxap_monavg_climos2.to_netcdf(os.path.join(outdir, cropname + '_kmaxdaysavgprop_decades.nc'), encoding=encoding)
     
     # difference the climatologies
-    ktmpap_monavg_climo_diffs = ktmpap_monavg_climos.copy()[1:]
-    kmaxap_monavg_climo_diffs = kmaxap_monavg_climos.copy()[1:]
-    for dec in range(1,6):
-        ktmpap_monavg_climo_diffs[dec-1] = ktmpap_monavg_climos[dec] - \
-                                           ktmpap_monavg_climos[0]
-        kmaxap_monavg_climo_diffs[dec-1] = kmaxap_monavg_climos[dec] - \
-                                           kmaxap_monavg_climos[0]
-    ktmpap_monavg_climo_diffs.to_netcdf(os.path.join(outdir, cropname + '_ktmpdaysavgprop_decadal_changes.nc'))    
-    kmaxap_monavg_climo_diffs.to_netcdf(os.path.join(outdir, cropname + '_kmaxdaysavgprop_decadal_changes.nc'))    
+    ktmpap_monavg_climo_diffs = ktmpap_monavg_climos2.copy()[1:]
+    kmaxap_monavg_climo_diffs = kmaxap_monavg_climos2.copy()[1:]
+    decs = kmaxap_monavg_climos2.shape[0]
+    for dec in range(1,decs):
+        ktmpap_monavg_climo_diffs[dec-1] = ktmpap_monavg_climos2[dec] - \
+                                           ktmpap_monavg_climos2[0]
+        kmaxap_monavg_climo_diffs[dec-1] = kmaxap_monavg_climos2[dec] - \
+                                           kmaxap_monavg_climos2[0]
+    
+    # compress and save to disk
+    ktmpap_monavg_climo_diffs.encoding['zlib'] = True
+    ktmpap_monavg_climo_diffs.encoding['complevel'] = 1
+    ktmpap_monavg_climo_diffs.encoding['shuffle'] = False
+    ktmpap_monavg_climo_diffs.encoding['contiguous'] = False
+    ktmpap_monavg_climo_diffs.encoding['dtype'] = np.dtype('float32')
+    encoding = {}
+    encoding['average_proportion_of_ktmp_days_in_gtime'] = ktmpap_monavg_climo_diffs.encoding
+    ktmpap_monavg_climo_diffs.to_netcdf(os.path.join(outdir, cropname + '_ktmpdaysavgprop_decadal_changes.nc'), encoding=encoding)
+
+    kmaxap_monavg_climo_diffs.encoding['zlib'] = True
+    kmaxap_monavg_climo_diffs.encoding['complevel'] = 1
+    kmaxap_monavg_climo_diffs.encoding['shuffle'] = False
+    kmaxap_monavg_climo_diffs.encoding['contiguous'] = False
+    kmaxap_monavg_climo_diffs.encoding['dtype'] = np.dtype('float32')
+    encoding = {}
+    encoding['average_proportion_of_kmax_days_in_gtime'] = kmaxap_monavg_climo_diffs.encoding
+    kmaxap_monavg_climo_diffs.to_netcdf(os.path.join(outdir, cropname + '_kmaxdaysavgprop_decadal_changes.nc'), encoding=encoding)
 
     return ktmpap_monavg_climo_diffs, kmaxap_monavg_climo_diffs
 
@@ -374,6 +543,7 @@ def plot_decade(allscore, tempscore, precscore, save=None):
         if not os.path.exists(savedir):
             os.makedirs(savedir)
         plt.savefig(save, dpi=300)
+        plt.close()
 
 
 def plot_decadal_changes(dcdata, save=None, cmin=None, cmax=None, revcolbar=None):
@@ -445,7 +615,69 @@ def plot_decadal_changes(dcdata, save=None, cmin=None, cmax=None, revcolbar=None
         if not os.path.exists(savedir):
             os.makedirs(savedir)
         plt.savefig(save, dpi=300)
+        plt.close()
 
+def plot_degC_changes(dcdata, savedir=None, cmin=None, cmax=None, revcolbar=None):
+    
+    if not cmax:
+        cmax2 = np.ceil(dcdata.max().values)
+        if cmax2 not in (0., 1.):
+            cmax = cmax2
+        else:
+            cmax = dcdata.max().values
+
+    if not cmin:
+        cmin2 = np.floor(dcdata.min().values)
+        if cmin2 not in (0., -1.):
+            cmin = cmin2
+        else:
+            cmin = dcdata.min().values
+    
+    if abs(cmax) > abs(cmin):
+        cmin = -1*cmax
+    else:
+        cmax = -1*cmin
+
+    fig, axs = plt.subplots(1,3, subplot_kw={'projection': cp.crs.OSGB()})
+    fig.set_figwidth(10)    
+    ax1 = axs[0]
+    ax2 = axs[1]
+    ax3 = axs[2]
+    ax1.coastlines(resolution='10m')
+    ax2.coastlines(resolution='10m')
+    ax3.coastlines(resolution='10m')
+
+    if not revcolbar:
+        cmap = 'bwr_r'
+    else:
+        cmap = 'bwr'
+    dcdata.sel(deg='2C').plot(ax=ax1, vmin=cmin, vmax=cmax, cmap=cmap)
+    dcdata.sel(deg='3C').plot(ax=ax2, vmin=cmin, vmax=cmax, cmap=cmap)
+    dcdata.sel(deg='4C').plot(ax=ax3, vmin=cmin, vmax=cmax, cmap=cmap)
+
+    cbartext = dcdata.name + '_change'
+    cbarax1 = ax1.collections[0].colorbar.ax
+    cbarax2 = ax2.collections[0].colorbar.ax
+    cbarax3 = ax3.collections[0].colorbar.ax
+    cbarax1.set_ylabel('')
+    cbarax2.set_ylabel('')
+    cbarax3.set_ylabel(cbartext, fontsize='x-small')
+    cbarax1.tick_params(axis='y', labelsize=7)
+    cbarax2.tick_params(axis='y', labelsize=7)
+    cbarax3.tick_params(axis='y', labelsize=7)
+    
+    cropname = str(dcdata.crop.values)
+    ax1.set_title('Suitability change for ' + cropname + ' at 2C', size='x-small')
+    ax2.set_title('Suitability change for ' + cropname + ' at 3C', size='x-small')
+    ax3.set_title('Suitability change for ' + cropname + ' at 4C', size='x-small')
+
+    if not savedir==None:
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        plotname = cropname + '_degC_changes.png'
+        savepath = os.path.join(savedir, plotname)
+        plt.savefig(savepath, dpi=600)
+        plt.close()
 
 # Clever function that does a forward rolling sum without loops
 # see https://stackoverflow.com/questions/14313510/how-to-calculate-rolling-moving-average-using-numpy-scipy
@@ -482,6 +714,39 @@ def score_temp(gtime, gmin, gmax):
 #            xr.where(total > popmin, 100, \
 #            (100/(popmin-pmin))*(total-pmin)))
 #    return score.round()
+
+def score_temp2(temp, tmin, tmax, topmin, topmax):
+    tmin = tmin.astype('float32')
+    tmax = tmax.astype('float32')
+    topmin = topmin.astype('float32')
+    topmax = topmax.astype('float32')
+    score = xr.where(temp > tmax, 0, \
+            xr.where(temp > topmax, (tmax - temp)/(tmax - topmax), \
+            xr.where(temp > topmin, 1, \
+            xr.where(temp > tmin, (temp - tmin)/(topmin - tmin), 0))))
+    return score.astype('float16')
+
+def score_temp3(avgt, tmin, tmax, topmin, topmax):
+    tmin = tmin.astype('float32')
+    tmax = tmax.astype('float32')
+    topmin = topmin.astype('float32')
+    topmax = topmax.astype('float32')
+    score = xr.where(avgt > tmax, 0, \
+            xr.where(avgt > topmax, (100/(tmax-topmax)) * (tmax-avgt), \
+            xr.where(avgt > topmin, 1, \
+            xr.where(avgt > tmin, (100/(topmin-tmin)) * (avgt-tmin), 0))))
+    return score.round().astype('uint8')
+
+def score_temp4(avgt, tmin, tmax, topmin, topmax):
+    tmin = tmin.astype('float32')
+    tmax = tmax.astype('float32')
+    topmin = topmin.astype('float32')
+    topmax = topmax.astype('float32')
+    score = xr.where(avgt > tmax, 0, \
+            xr.where(avgt > 0.5*(topmax+topmin), (100/(tmax-0.5*(topmax+topmin)))*(tmax-avgt), \
+            xr.where(avgt > tmin, (100/(0.5*(topmax+topmin)-tmin))*(avgt-tmin), 0)))
+    return score.round().astype('uint8')
+
 
 def score_prec1(total, pmin, pmax, popmin, popmax):
     pmin=pmin.astype('float32')
@@ -577,7 +842,79 @@ def time_chunk_calc(window, tlen):
     return optimal
 
 
+def read_grd_file(filen, mask=0):
+    vals = np.loadtxt(filen,skiprows=6)
+    if mask==1:
+        vals = np.ma.masked_values(vals, 0)
+        vals = np.ma.masked_values(vals, -9999.)
+        # preserve the mask whilst setting masked values to nans
+        vals.data[np.where(vals.data == 0)]      = np.nan 
+        vals.data[np.where(vals.data == -9999.)] = np.nan
+    return vals
+    
+def read_nc(filen,var):
+    ncf = nc4.Dataset(filen,'r')    # open and read from netcdf file
+    data = ncf.variables[var][:]    # variable
+    x = ncf.variables['x'][:]       # easting
+    y = ncf.variables['y'][:]       # northing
+    if len(data.shape) >= 3:     # time
+        t = ncf.variables['t'][:]
+        tunits = ncf.variables['t'].units
+    else:
+        t = None
+        tunits = None
+    ncf.close()                     # close netcdf file  
+    return data,x,y,t,tunits
+    
+def get_coords(filein):
+    filen = open(filein,'r')
+    ncols = int(filen.readline().split()[1])
+    nrows = int(filen.readline().split()[1])
+    xllc  = float(filen.readline().split()[1])
+    yllc  = float(filen.readline().split()[1])
+    res   = float(filen.readline().split()[1])
+    nodata= float(filen.readline().split()[1])
+    filen.close()
+    return nrows, ncols, xllc, yllc, res, nodata
 
+def make_xarray(filein, xdimname='x', ydimname='y'):
+    nrows, ncols, xllc, yllc, res, nodata = get_coords(filein)
+    xcoords = np.linspace(xllc + (res/2), xllc + (res/2) + (res*(ncols-1)), ncols)
+    ycoords = np.linspace(yllc + (res/2), yllc + (res/2) +  (res*(nrows-1)), nrows)[::-1]
+    vals = np.loadtxt(filein, skiprows=6)
+    vals = xr.DataArray(vals, coords=[(ydimname, ycoords), (xdimname, xcoords)])
+    vals = vals.where(vals != nodata)
+    return vals, xcoords, ycoords, nodata
+
+def nctoxr(filein, var):
+    data,x,y = read_nc(filein, var)
+    dataxr = xr.DataArray(data, coords=[('y',y), ('x',x)])
+    return dataxr
+
+def subset_to_template(filein, template):
+    tvals, xcoords_template, ycoords_template, nodata = make_xarray(template)
+    tvalsnp = tvals.values.copy()
+    vals, xcoords, ycoords, nodata = make_xarray(filein)
+    subvals = vals.sel(y = slice(ycoords_template[0], ycoords_template[-1]),
+                       x  = slice(xcoords_template[0], xcoords_template[-1]))
+    newxcoords = subvals.coords['x'].values
+    newycoords = subvals.coords['y'].values
+    return subvals, newxcoords, newycoords, nodata
+
+def grd_to_netcdf_single(filein, varname, units, filesave=1, filenameout='grd.ncf', subset=0, template=None):
+    if subset == 1:
+        vals, junk1, junk2, nodata = subset_to_template(filein, template)
+    else:
+        vals, junk, junk2, nodata = make_xarray(filein)
+    vals.name = varname
+    vals.attrs = {'Units': units, 'missing_value': nodata}
+    vals.coords['x'].attrs = {'long_name':'easting', 'standard_name':'projection_x_coordinate', 'units':'m', 'point_spacing':'even', 'axis':'x'}
+    vals.coords['y'].attrs = {'long_name':'northing', 'standard_name':'projection_y_coordinate', 'units':'m', 'point_spacing':'even', 'axis':'y'}
+
+    if filesave == 1:
+        vals.to_netcdf(filenameout)
+    else:
+        return vals, nodata
 
     
 
