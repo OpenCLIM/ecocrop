@@ -3,6 +3,7 @@ import xarray as xr
 import numpy  as np
 import cartopy as cp
 import netCDF4 as nc4
+import rioxarray as rioxr
 import matplotlib.pyplot as plt
 
 def circular_avg(maxdoys, dim):
@@ -43,7 +44,8 @@ def circular_avg(maxdoys, dim):
 def lcm_mask(lcm, data):
     if type(lcm)==str:
         if lcm[-3:]=='tif':
-            lcm = xr.open_rasterio(lcm)
+            lcm = xr.open_dataset(lcm, engine='rasterio')
+            lcm = lcm['band_data']
             lcm = lcm.drop('band').squeeze()
         else:
             lcm = xr.open_dataarray(lcm)
@@ -69,7 +71,8 @@ def lcm_mask(lcm, data):
 def lcm_mask_xr(lcm, data):
     if type(lcm)==str:
         if lcm[-3:]=='tif':
-            lcm = xr.open_rasterio(lcm)
+            lcm = xr.open_dataset(lcm, engine="rasterio")
+            lcm = lcm['band_data']
             lcm = lcm.drop('band').squeeze()
         else:
             lcm = xr.open_dataarray(lcm)
@@ -210,7 +213,8 @@ def calc_decadal_changes(tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, o
 
     print('Doing masking')
     # mask at this stage to avoid memory issues
-    lcm = xr.open_rasterio(LCMloc)
+    lcm = xr.open_dataset(LCMloc, engine="rasterio")
+    lcm = lcm['band_data']
     lcm = lcm.drop('band').squeeze()
     lcm=lcm[::-1,:]
     allscore_years  = lcm_mask(lcm, allscore_years)
@@ -328,7 +332,8 @@ def calc_decadal_doy_changes(maxdoys, maxdoys_temp, maxdoys_prec, SOIL, LCMloc, 
     '''
 
     # mask land-cover and soil
-    lcm = xr.open_rasterio(LCMloc)
+    lcm = xr.open_dataset(LCMloc, engine="rasterio")
+    lcm = lcm['band_data']
     lcm = lcm.drop('band').squeeze()
     lcm=lcm[::-1,:]
     maxdoys      = lcm_mask(lcm, maxdoys)
@@ -431,7 +436,8 @@ def calc_decadal_kprop_changes(ktmpap, kmaxap, SOIL, LCMloc, sgmloc, cropname, o
     kmaxap_monavg = kmaxap.resample(time="1MS").mean(dim="time")
 
     # mask
-    lcm = xr.open_rasterio(LCMloc)
+    lcm = xr.open_dataset(LCMloc, engine='rasterio')
+    lcm = lcm['band_data']
     lcm = lcm.drop('band').squeeze()
     lcm=lcm[::-1,:]
     ktmpap_monavg = lcm_mask(lcm, ktmpap_monavg)
