@@ -8,10 +8,17 @@ import datetime as dt
 import os
 
 cropind = int(sys.argv[1])
-rcp = int(sys.argv[2]) # '85' or '26'
-ensmem = int(sys.argv[3]) # '01', '04', '06' or '15
-pf = int(sys.argv[4]) # 'past' or 'future'
-method = int(sys.argv[5]) # 'annual' or 'perennial'
+ rcp = sys.argv[2] # '85' or '26'
+ensmem = sys.argv[3] # '01', '04', '06' or '15
+pf = sys.argv[4] # 'past' or 'future'
+method = sys.argv[5] # 'annual' or 'perennial'
+ecocroploc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/EcoCrop_DB_secondtrim.csv'
+tasvname = 'tas'
+prevname = 'pr'
+tmnvname = 'tasmin'
+tmxvname = 'tasmax'
+lcmloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/Mask_arable_LCM2015_UK.tif'
+bgsloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/EU_STM_soildata'
 
 if pf == 'past':
     ab = 'b2020'
@@ -20,30 +27,34 @@ elif pf == 'future':
 else:
     ab = ''
 
-ecocroploc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/EcoCrop_DB_secondtrim.csv'
+if rcp in ['85', '26']:
+    rcp2 = rcp + '/'
+else:
+    rcp=''
+    rcp2=''
 
-tasvname = 'tas'
-prevname = 'pr'
-tmnvname = 'tasmin'
-tmxvname = 'tasmax'
-taspath = '/badc/deposited2021/chess-scape/data/rcp' + rcp + '/' + ensmem + \
-          '/daily/tas/chess-scape_rcp' + rcp + '_' + ensmem + \
+if ensmem in ['01', '04', '06', '15']:
+    ensmem2 = ensmem + '/'
+else:
+    ensmem=''
+    ensmem2=''
+
+taspath = '/badc/deposited2021/chess-scape/data/rcp' + rcp2 + ensmem2 + \
+          'daily/tas/chess-scape_rcp' + rcp + '_' + ensmem + \
           '_tas_uk_1km_daily_????????-????????.nc'
-prepath = '/badc/deposited2021/chess-scape/data/rcp' + rcp + '/' + ensmem + \
-          '/daily/pr/chess-scape_rcp' + rcp '_' + ensmem + \
+prepath = '/badc/deposited2021/chess-scape/data/rcp' + rcp2 + ensmem2 + \
+          'daily/pr/chess-scape_rcp' + rcp '_' + ensmem + \
           '_pr_uk_1km_daily_????????-????????.nc'
-tmnpath = '/badc/deposited2021/chess-scape/data/rcp' + rcp + '/' + ensmem + \
-          '/daily/tasmin/chess-scape_rcp' + rcp + '_' + ensmem + \
+tmnpath = '/badc/deposited2021/chess-scape/data/rcp' + rcp2 + ensmem + \
+          'daily/tasmin/chess-scape_rcp' + rcp + '_' + ensmem + \
           '_tasmin_uk_1km_daily_????????-????????.nc'
-tmxpath = '/badc/deposited2021/chess-scape/data/rcp' + rcp + '/' + ensmem + \
-          '/daily/tasmax/chess-scape_rcp' + rcp + '_' + ensmem + \
+tmxpath = '/badc/deposited2021/chess-scape/data/rcp' + rcp2 + ensmem2 + \
+          'daily/tasmax/chess-scape_rcp' + rcp + '_' + ensmem + \
           '_tasmax_uk_1km_daily_????????-????????.nc'
 savedir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/scores_rcp' + \
           rcp + '_ens' + ensmem + '_' + ab 
 plotdir = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/plots_rcp' + \
           rcp + '_ens' + ensmem + '_' + ab 
-lcmloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/Mask_arable_LCM2015_UK.tif'
-bgsloc = '/gws/nopw/j04/ceh_generic/matbro/ecocrop/EU_STM_soildata'
 
 yearaggmethod = 'percentile'
 precmethod = 2
