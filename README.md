@@ -89,7 +89,7 @@ This sum, $N_D$, is the total number of suitable days within $GTIME$.
 
 If $N_D$ is greater than or equal to $GMIN$, I.e. if at least the minimum number of suitable days is achieved within $GTIME$, then a suitability score $S_T$, dependent only on the given $GTIME$, is assigned to the given day:
 
-$$S_T=100\left[1-\frac{GTIME-GMIN}{GMAX-GMIN}\right]\text{ where } N_D≥GMIN\text{ else } S_T=0$$
+$S_T=100\left[1-\frac{GTIME-GMIN}{GMAX-GMIN}\right]\text{ where } N_D≥GMIN\text{ else } S_T=0$
 
 The result of this calculation is that the fewer days it takes to amass $GMIN$ suitable days, the higher the suitability score ($S_T$).
 
@@ -102,11 +102,11 @@ Heat stress and frost penalties are then applied to the suitability score to acc
 The temperature score for a given $GTIME$, each day, grid square and crop is calculated as follows:
 First, the average daily-average-temperature ($TAVG$) across $GTIME$ is calculated. Then the following equation is used to calculate the score, $S_T$:
 
-$$S_T=\frac{100}{0.5\left(TOPMX+TOPMN\right)-TMIN} \left(TAVG-TMIN\right)\text{ when } TMIN<TAVG<0.5\left(TOPMX+TOPMN\right)$$
+$S_T=\frac{100}{0.5\left(TOPMX+TOPMN\right)-TMIN} \left(TAVG-TMIN\right)\text{ when } TMIN\lt TAVG\lt 0.5\left(TOPMX+TOPMN\right)$
 
-$$S_T=\frac{100}{TMAX-0.5\left(TOPMX+TOPMN\right)}\left(TMAX-TAVG\right) when TMAX>TAVG>0.5\left(TOPMX+TOPMN\right)$$
+$S_T=\frac{100}{TMAX-0.5\left(TOPMX+TOPMN\right)}\left(TMAX-TAVG\right)\text{ when } TMAX\gt TAVG\gt 0.5\left(TOPMX+TOPMN\right)$
 
-$$S_T=0\text{ for all other }TAVG$$
+$S_T=0\text{ for all other }TAVG$
 
 The same heat and frost penalties as for the annual temperature suitability scoring method are then applied.
 
@@ -115,11 +115,11 @@ The same heat and frost penalties as for the annual temperature suitability scor
 
 The precipitation score is calculated in a similar way to the perennial temperature scoring method. The precipitation total ($PTOT$) is calculated over the $GTIME$ period then the following equation is used: 
 
-$$S_P=\frac{100}{0.5\left(POPMX+POPMN\right)-PMIN}\left(PTOT-PMIN\right)\text{ where }PMIN<PTOT<0.5\left(POPMX+POPMN\right)$$
+$S_P=\frac{100}{0.5\left(POPMX+POPMN\right)-PMIN}\left(PTOT-PMIN\right)\text{ where }PMIN\lt PTOT\lt 0.5\left(POPMX+POPMN\right)$
 
-$$S_P=\frac{100}{PMAX-0.5\left(POPMX+POPMN\right)}\left(PMAX-PTOT\right)\text{ where }PMAX>PTOT>0.5\left(POPMX+POPMN\right)$$
+$S_P=\frac{100}{PMAX-0.5\left(POPMX+POPMN\right)}\left(PMAX-PTOT\right)\text{ where }PMAX\gt PTOT\gt 0.5\left(POPMX+POPMN\right)$
 
-$$S_P=0\text{ for all other }PTOT$$
+$S_P=0\text{ for all other }PTOT$
 
 # License information
 
