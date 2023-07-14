@@ -5,8 +5,6 @@ MJB 14/7/23
 
 # Overview
 
-$$S_P=\frac{100}{0.5\left(POPMX+POPMN\right)-PMIN}\left(PTOT-PMIN\right)\text{ where }PMIN<PTOT<0.5\left(POPMX+POPMN\right)$$
-
 The Ecocrop suitability model assesses the changing climatic suitability of 182 crops. Only temperature and precipitation are assessed, meaning that the suitability only reflects that for un-irrigated crops grown outside. Other impacts on suitability such as changing soils and the spread of pests or diseases are not accounted for. 
 
 The tool uses the following parameters from the EcoCrop database for the climate suitability calculation:
@@ -119,15 +117,11 @@ The precipitation score is calculated in a similar way to the perennial temperat
 
 $$S_P=\frac{100}{0.5\left(POPMX+POPMN\right)-PMIN}\left(PTOT-PMIN\right)\text{ where }PMIN<PTOT<0.5\left(POPMX+POPMN\right)$$
 
-$$S_P=\frac{100}{0.5\left(POPMX+POPMN\right)-PMIN}\left(PTOT-PMIN\right)\text{ where }PMIN<PTOT<0.5\left(POPMX+POPMN\right)$$
-
 $$S_P=\frac{100}{PMAX-0.5\left(POPMX+POPMN\right)}\left(PMAX-PTOT\right)\text{ where }PMAX>PTOT>0.5\left(POPMX+POPMN\right)$$
 
 $$S_P=0\text{ for all other }PTOT$$
 
 # License information
-
-$$S_P=\frac{100}{0.5\left(POPMX+POPMN\right)-PMIN}\left(PTOT-PMIN\right)\text{ where }PMIN<PTOT<0.5\left(POPMX+POPMN\right)$$
 
 This code is available under the [terms of the Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
 By accessing or using this dataset, you agree to the [terms of the Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). 
