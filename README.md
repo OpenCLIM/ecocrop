@@ -115,7 +115,9 @@ The same heat and frost penalties as for the annual temperature suitability scor
 
 The precipitation score is calculated in a similar way to the perennial temperature scoring method. The precipitation total ($PTOT$) is calculated over the $GTIME$ period then the following equation is used: 
 
-$$S_P=\frac{100}{0.5\left(POPMX+POPMN\right)-PMIN}\left(PTOT-PMIN\right)\text{ where }PMIN<PTOT<0.5\left(POPMX+POPMN\right)$$ 
+$$S_P=\frac{100}{0.5\left(POPMX+POPMN\right)-PMIN}\left(PTOT-PMIN\right)\text{ where }PMIN<PTOT<0.5\left(POPMX+POPMN\right)$$
+
+$$S_P=\frac{100}{0.5\left(POPMX+POPMN\right)-PMIN\left(PTOT-PMIN\right)\text{ where }PMIN<PTOT<0.5\left(POPMX+POPMN\right)$$
 
 $$S_P=\frac{100}{PMAX-0.5\left(POPMX+POPMN\right)}\left(PMAX-PTOT\right)\text{ where }PMAX>PTOT>0.5\left(POPMX+POPMN\right)$$
 
