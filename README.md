@@ -67,15 +67,15 @@ The temperature score $S_T$ is calculated in two different methods dependent on 
 
 ### Annual Scoring Method
 
-For annual crops, S_T is calculated using the following method:
+For annual crops, $S_T$ is calculated using the following method:
 
 For each day, 1km grid cell and GTIME length, an intermediate score between 0 and 1 is assigned using the following equations:
 
-$$D=\frac{T-TMIN}{TOPMN-TMIN}\text{ when } TMIN<T<TOPMN $$ 
+$$D\eq\frac{T-TMIN}{TOPMN-TMIN} \text{ when }TMIN<T<TOPMN $$ 
 
-$$D=1\text{ when }  TOPMN<T<TOPMX$$ 
+$$D\eq 1 \text{ when } TOPMN<T<TOPMX$$ 
 
-$$D=\frac{TMAX-T}{TMAX-TOPMX}\text{ when } TOPMX<T<TMAX $$
+$$D\eq\frac{TMAX-T}{TMAX-TOPMX} \text{ when }TOPMX<T<TMAX $$
 
 $$D=0\text{ for all other }T$$
 
