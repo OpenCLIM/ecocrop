@@ -5,7 +5,7 @@ MJB 14/7/23
 
 # Overview
 
-The Ecocrop suitability model assesses the changing climatic suitability of 182 crops. Only temperature and precipitation are assessed, meaning that the suitability only reflects that for un-irrigated crops grown outside. Other impacts on suitability such as changing soils and the spread of pests or diseases are not accounted for. 
+The Ecocrop suitability model assesses the changing climatic suitability of a variety of crops. Temperature and precipitation are assessed, so the suitability is for un-irrigated crops grown outside. Other impacts on suitability such as changing soils and the spread of pests or diseases are not accounted for. 
 
 The tool uses the following parameters from the EcoCrop database for the climate suitability calculation:
 - TOPMN,optimal minimum temperature
@@ -26,17 +26,27 @@ The following parameters are used, optionally, for additional masking of suitabl
 
 A suitability score out of 100 is calculated for temperature and precip separately, with the combined score the lower of these.
 
-
 # Inputs and requirements
 
 - The full FAO EcoCrop database is provided as EcoCrop_DB.csv.
 - The code is currently set up to run on a trimmed-down version, EcoCrop_DB_secondtrim.csv
 - Daily values of average, minimum, maximum temperature are required, along with daily precipitation, all on a grid in netCDF format. 
 - Units of Kelvin and kg/m^2/s are expected
-- A python environment with xarray, pandas, dask, cftime, cartopy and geopandas is required. Matplotlib also if plotting outputs.
+- A python environment with xarray and pandas is required. Other optional packages are matplotlib and cartopy is making use of the plotting scripts and dask if attempting to process more data than will fit in memory.
 
+# Installation
+The current recommended method for running the code is to first set up an anaconda or mamba environment with the required packages in.
+Installation instructions and downloads can be found on the (Anaconda website)[https://www.anaconda.com/download]
+Download the EcoCrop repository to your local machine using `git clone` if git is installed. **MORE DETAIL prev sentence**. If git is not installed a zip file of the repository can be obtained from **LINK** zenodo.
+Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f environment.yml`. If on a windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell. 
+Once the environment is installed, activate it using **conda activate envname** and you are ready to go!
 
-# Running instructions
+# Test running instructions
+
+A small dataset and script is provided for testing the code and checking it produces the expected outputs. 
+The test script is ecocrop_testdata_run.py and the test data is in the testdata folder. 
+
+# Full running instructions
 
 - This code is set up to run with the CHESS-SCAPE dataset, it remains an issue to generalise this to other climate datasets. 
 - It is designed to run on a HPC due to the high memory requirements (approximately 1.5x the disk size of the meteorological data, ~500GB for the UK at 1km resolution for 60years of daily data)
