@@ -35,36 +35,42 @@ A suitability score out of 100 is calculated for temperature and precip separate
 - A python environment with xarray and pandas is required. Other optional packages are matplotlib and cartopy is making use of the plotting scripts and dask if attempting to process more data than will fit in memory.
 
 # Installation
-The current recommended method for running the code is to first set up an anaconda or mamba environment with the required packages in.
-Installation instructions and downloads can be found on the (Anaconda website)[https://www.anaconda.com/download]
-Download the EcoCrop repository to your local machine using `git clone` if git is installed. **MORE DETAIL prev sentence**. If git is not installed a zip file of the repository can be obtained from **LINK** zenodo.
-Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f environment.yml`. If on a windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell. 
-Once the environment is installed, activate it using **conda activate envname** and you are ready to go!
+The current recommended method for running the code is to first set up an anaconda or mamba environment with the required packages in. This can be done on Windows, Mac or Linux operating systems.
+- Installation instructions and downloads for each operating system can be found on the (Anaconda website)[https://www.anaconda.com/download]
+- Download the EcoCrop repository to your local machine using `git clone` if git is installed. **MORE DETAIL in prev sentence**. If git is not installed a zip file of the repository can be obtained from **LINK** zenodo.
+- Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`. replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell. 
+- Once the environment is installed, activate it using **conda activate envname** and you are ready to go!
 
 # Test running instructions
 
-A small dataset and script is provided for testing the code and checking it produces the expected outputs. 
-The test script is ecocrop_testdata_run.py and the test data is in the testdata folder. 
+A small dataset and script is provided for testing the code and checking it produces the expected outputs. The test script is set up to produce suitability scores for north Norfolk for 2020 for a wheat crop. 
+The test script is ecocrop_testdata_run.py and the test data is in the testdata folder. It can be run on Windows, Mac or Linux operating systems.
+Edits can be made to the variables at the start of the test script if necessary, but it is recommended to leave these as they are for the purposes of testing. 
+- Ensure the **envname** environment is active by running **conda activate envname** in the Anaconda Prompt or terminal/shell
+- Ensure you are in the directory containing all the repository files, including the test script. Use the 'cd' command in the prompt/terminal/shell to change directory. The current directory can be checked with the 'pwd' command and the files in the current directory can be viewed with 'ls'.
+- Run the test script with the command `python ecocrop_testdata_run.py`
+- There will be printouts on the screen displaying what the script is doing
+- The suitability scores output from the script will be sent to the 'testoutputs' folder, along with an example plot.
 
 # Full running instructions
 
-- This code is set up to run with the CHESS-SCAPE dataset, it remains an issue to generalise this to other climate datasets. 
-- It is designed to run on a HPC due to the high memory requirements (approximately 1.5x the disk size of the meteorological data, ~500GB for the UK at 1km resolution for 60years of daily data)
+- This code is set up to run with the full 100-year daily and 1km resolution CHESS-SCAPE dataset, but can be run with any dataset that has daily precipitation and daily average/max/min temperature.
+- It is designed to run on a HPC due to the high memory requirements 
 - An example of a SLURM job submit script is provided as ecocrop_lotus_himem_template.sbatch
 - This calls the main python script ecocrop_lotus_himem.py with the following arguments as inputs:
 - 'cropind': Replace this with the EcoCrop_DB_secondtrim.csv row number (0-based, ignoring header row) of the spreadsheet in the sbatch template.
 - 'rcp' and 'ensmem': variables are for the different RCP Scenarios and ensemble members of the CHESS-SCAPE dataset respectively. They only affect the input and output data directories.
-- 'pf': handles the fact that the CHESS-SCAPE dataset was split up into before and after 2020, to help with memory limits. Again though it only affects the input and output data dirs. Can be set to 'past' or 'future' or anything else to ignore it.
+- 'pf': handles the fact that the CHESS-SCAPE dataset was originally split up into before and after 2020, to help with memory limits. Again though it only affects the input and output data dirs. Can be set to 'past' or 'future' or anything else to ignore it.
 - 'method': The temperature scoring method as described below. Can be 'annual' or 'perennial'.
 - The following variables can be edited within the python script itself:
-- ecocroploc: The location of the ecocrop database
+- ecocroploc: The location of the ecocrop database (provided in the repo)
 - tasvname: Variable name of daily average temperature in the input netcdf files
 - tmnvname: Variable name of daily minimum temperature in the input netcdf files
 - tmxvname: Variable name of daily maximum temperature in the input netcdf files
 - precname: Variable name of daily precipitation total in the input netcdf files
 - lcmloc: Location of the arable land mask (provided in the repo)
 - bgsloc: Location of the soil masks (provided in the repo)
-You can also edit the taspath, tmnpath, tmxpath, precpath to point to your netcdf files as needed, and the plotloc and saveloc for where output plots and netcdf files are stored. 
+You can also edit the taspath, tmnpath, tmxpath, precpath to point to your netcdf files as needed, and the plotloc and saveloc for where output plots and netcdf files are to be stored. 
 
 
 # Method
