@@ -8,6 +8,7 @@ from ecocrop_utils import (
     score_prec1,
     score_prec2,
     score_prec3,
+    plot_year,
 )
 import pandas as pd
 import xarray as xr
@@ -370,4 +371,11 @@ print("Calculating yearly scores")
     cropname,
     savedir,
     yearaggmethod,
+)
+
+plot_year(
+    allscore_years[0, :, :],
+    tempscore_years[0, :, :],
+    precscore_years[0, :, :],
+    save=os.path.join(plotdir, cropname + "_current_decade.png"),
 )

@@ -2,8 +2,6 @@ import os
 import xarray as xr
 import numpy as np
 import cartopy as cp
-import netCDF4 as nc4
-import rioxarray as rioxr
 import matplotlib.pyplot as plt
 
 
@@ -242,14 +240,14 @@ def calc_yearly_scores_only(
 ):
     """
     Calculate aggregated yearly crop suitability scores from the
-    daily scores.
-    tempscore, precscore inputs either netcdf filenames
-    or xarray dataarrays. Both must have variables
-    'temperature_suitability_score' and
-    'precip_suitability_score', respectively
+    daily scores. The last year should always be discounted, as it will have
+    been truncated by the rolling sum operation used to calculate the
+    suitability scores.
 
     Inputs
     ------
+    tempscore, precscore inputs either netcdf filenames
+    or xarray dataarrays.
     SOIL: Soil group suitability string from the ecocrop database
     LCMloc: Land cover mask. Path to tif
     sgmloc: Soil group mask netcdfs folder as string
@@ -908,6 +906,59 @@ def calc_decadal_kprop_changes(
     )
 
     return ktmpap_monavg_climo_diffs, kmaxap_monavg_climo_diffs
+
+
+def plot_year(allscore, tempscore, precscore, save=None):
+    """
+    Plot a given year's allscore, tempscore and precscore.
+    Identical to plot_decade, could probably merge and rename.
+
+    Inputs
+    ------
+    allscore : xarray dataarray/set
+        A given decade's gridded crop suitability score.
+    tempscore : xarray dataarray/set
+        A given decade's gridded temperature suitability score.
+    precscore : xarray dataarray/set
+        A given decade's gridded precipitation suitability score.
+    save : boolean, optional
+        Controls whether or not the plot is saved to disk. The default is None.
+
+    Returns
+    -------
+    None.
+
+    """
+    fig, axs = plt.subplots(1, 3, subplot_kw={"projection": cp.crs.OSGB()})
+    fig.set_figwidth(10)
+    ax1 = axs[0]
+    ax2 = axs[1]
+    ax3 = axs[2]
+    ax1.coastlines(resolution="10m")
+    ax2.coastlines(resolution="10m")
+    ax3.coastlines(resolution="10m")
+
+    allscore.where(allscore > 0).plot(ax=ax1, vmin=0, vmax=100)
+    tempscore.where(tempscore > 0).plot(ax=ax2, vmin=0, vmax=100)
+    precscore.where(precscore > 0).plot(ax=ax3, vmin=0, vmax=100)
+
+    cbarax1 = ax1.collections[0].colorbar.ax
+    cbarax2 = ax2.collections[0].colorbar.ax
+    cbarax3 = ax3.collections[0].colorbar.ax
+    cbarax1.set_ylabel("")
+    cbarax2.set_ylabel("")
+    cbarax3.set_ylabel("")
+
+    ax1.set_title("crop_suitability")
+    ax2.set_title("temperature_suitability")
+    ax3.set_title("precip_suitability")
+
+    if not save == None:
+        savedir = os.path.dirname(save)
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        plt.savefig(save, dpi=300)
+        plt.close()
 
 
 def plot_decade(allscore, tempscore, precscore, save=None):
