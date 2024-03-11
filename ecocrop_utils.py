@@ -47,9 +47,24 @@ def circular_avg(maxdoys, dim):
     return maxdoys_avg
 
 
-# Mask out non-growing regions using a version of the land-
-# cover map supplied by John Redhead
 def lcm_mask(lcm, data):
+    """
+    Mask out non-growing regions using a version of the land-
+    cover map
+
+    Parameters
+    ----------
+    lcm : string or xarray dataarray
+        path to land cover map file or xarray dataarray of it.
+    data : xarray dataarray or dataset
+        Data to mask.
+
+    Returns
+    -------
+    data_masked : xarray dataarray or dataset
+        Masked version of data
+
+    """
     if type(lcm) == str:
         if lcm[-3:] == "tif":
             lcm = xr.open_dataset(lcm, engine="rasterio")
@@ -79,31 +94,24 @@ def lcm_mask(lcm, data):
     return data_masked
 
 
-def lcm_mask_xr(lcm, data):
-    if type(lcm) == str:
-        if lcm[-3:] == "tif":
-            lcm = xr.open_dataset(lcm, engine="rasterio")
-            lcm = lcm["band_data"]
-            lcm = lcm.drop("band").squeeze()
-        else:
-            lcm = xr.open_dataarray(lcm)
-
-    dataxlims = [data["x"].values[0], data["x"].values[-1]]
-    dataylims = [data["y"].values[0], data["y"].values[-1]]
-    if dataylims[0] < dataylims[1]:
-        lcm = lcm[::-1, :]
-
-    lcm_cropped = lcm.sel(
-        x=slice(dataxlims[0], dataxlims[1]),
-        y=slice(dataylims[0], dataylims[1]),
-    )
-
-    data_masked = xr.where(lcm_cropped > 0, data, 0)
-    return data_masked
-
-
-# Mask based on soil type, using a soil type mask in netcdf format
 def soil_type_mask(mask, data):
+    """
+    Mask based on soil type, using a soil type mask in netcdf format
+
+    Parameters
+    ----------
+    mask : string
+        path to netcdf mask file with values <=0 indicating locations to be
+        masked out in data.
+    data : xarray dataarray or dataset
+        data to be masked.
+
+    Returns
+    -------
+    data_masked : xarray dataarray or dataset
+        masked version of data.
+
+    """
     dataxlims = [data["x"].values[0], data["x"].values[-1]]
     dataylims = [data["y"].values[0], data["y"].values[-1]]
 
@@ -125,8 +133,27 @@ def soil_type_mask(mask, data):
 
 
 def soil_type_mask_all(data, SOIL, maskloc):
-    # apply the masking function for all the soil types
-    # dependent on which the crop grows in (SOIL)
+    """
+    apply the masking function for all the soil types
+    dependent on which the crop grows in (SOIL)
+
+    Parameters
+    ----------
+    data : xarray dataarray or dataset
+        data to be masked.
+    SOIL : string
+        'heavy', 'medium' or 'light', describing the soil type suitable for
+        the crop
+    maskloc : string
+        path to netcdf mask file with values <=0 indicating locations to be
+        masked out in data.
+
+    Returns
+    -------
+    data_masked : xarray dataarray or dataset
+        masked version of data.
+
+    """
     if "heavy" in SOIL and "medium" in SOIL and "light" in SOIL:
         print("Doing masking for all soil groups")
         maskfile = os.path.join(maskloc, "all_soil_mask.nc")
@@ -161,8 +188,25 @@ def soil_type_mask_all(data, SOIL, maskloc):
 
 def calculate_max_doy(allscore, tempscore, precscore):
     """
-    Return the day of year of the maximum score for allscore, tempscore, precscore
+    Return the day of year of the maximum score for allscore, tempscore,
+    precscore
+
+    Inputs
+    ------
+    allscore: xarray dataset/dataarray
+        Daily crop combined temp and prec suitability scores
+    tempscore: as allscore but temperature score only
+    precscore: as allscore but precipitation score only
+
+    Returns
+    -------
+    maxdoys: xarray dataset/dataarray
+        The day in the year that has the highest value in allscore, for each
+        year, for each gridcell.
+    maxdoys_temp: as maxdoys but for tempscore
+    maxdoys_prec: as maxdoys but for precscore
     """
+
     maxdoys = []
     for yr, yrdata in allscore.groupby("time.year"):
         print("Calculating doy of max score for year " + str(yr))
@@ -197,18 +241,32 @@ def calc_yearly_scores_only(
     tempscore, precscore, SOIL, LCMloc, sgmloc, cropname, outdir, yearaggmethod
 ):
     """
-    Calculate decadal changes of crop suitability scores from the
-    daily crop suitability scores.
+    Calculate aggregated yearly crop suitability scores from the
+    daily scores.
     tempscore, precscore inputs either netcdf filenames
     or xarray dataarrays. Both must have variables
     'temperature_suitability_score' and
     'precip_suitability_score', respectively
 
+    Inputs
+    ------
     SOIL: Soil group suitability string from the ecocrop database
     LCMloc: Land cover mask. Path to tif
     sgmloc: Soil group mask netcdfs folder as string
     outdir: Where to store output netcdf files
     cropname: For output filenames
+    yearaggmethod: What metric to use to aggregate the scores to yearly values,
+                   can be 'max', 'median', 'mean' or 'percentile'.
+                   'percentile' is recommended and uses the 95th percentile.
+
+    Outputs
+    -------
+    allscore_years: xarray dataset/dataarray
+        The elementwise minimum of tempscore_years and precscore_years
+    tempscore_years: xarray dataset/dataarray
+        tempscore but aggregated to a yearly timestep according to
+        yearaggmethod
+    precscore_years: as tempscore_years but for precscore
     """
 
     print("Calculating yearly score")
@@ -298,11 +356,34 @@ def calc_decadal_changes(
     'temperature_suitability_score' and
     'precip_suitability_score', respectively
 
+    Inputs
+    ------
     SOIL: Soil group suitability string from the ecocrop database
     LCMloc: Land cover mask. Path to tif
     sgmloc: Soil group mask netcdfs folder as string
     outdir: Where to store output netcdf files
     cropname: For output filenames
+    yearaggmethod: What metric to use to aggregate the scores to yearly values,
+                   can be 'max', 'median', 'mean' or 'percentile'.
+                   'percentile' is recommended and uses the 95th percentile.
+
+
+    Outputs
+    -------
+    allscore_decades: xarray dataset/dataarray
+        The elementwise minimum of tempscore_years and precscore_years
+        averaged to a decadal timestep.
+    tempscore_decades: xarray dataset/dataarray
+        tempscore but aggregated to a decadal timestep according to
+        yearaggmethod for aggregation to a yearly timestep, then averaged over
+        the decades.
+    precscore_decades: as tempscore_decades but for precscore
+    allscore_decadal_changes: xarray dataset/dataarray
+        allscore_decades but the grid elementwise differences between each
+        decade and the first (which is dropped)
+    tempscore_decadal_changes: as allscore_decadal_changes but for tempscore
+    precscore_decadal_changes: as allscore_decadal_changes but for precscore
+
     """
 
     print("Calculating yearly score")
@@ -493,6 +574,31 @@ def calc_decadal_doy_changes(
     """
     Calculate decadal changes in the 'day of year of the maximum score' metric,
     using circular averaging
+
+    Inputs
+    ------
+    maxdoys: Xarray dataarray from calc_maximum_doy containing the day of year
+             on which the maximum crop suitability score occured for each
+             gridcell for each year.
+    maxdoys_temp: As maxdoys but for the temperature crop suitability score
+    maxdoys_prec: As maxdoys but for the precipitation crop suitability score
+    SOIL: Soil group suitability string from the ecocrop database
+    LCMloc: Land cover mask. Path to tif
+    sgmloc: Soil group mask netcdfs folder as string
+    outdir: Where to store output netcdf files
+    cropname: For output filenames
+
+    Outputs
+    -------
+    maxdoys_decadal_changes: xarray dataarray
+        The grid elementwise difference between each decade and the first
+        decade of the modulo average day of year denoting the day of year of
+        the maximum score for the combined temperature and precipitation crop
+        suitability score.
+    maxdoys_temp_decadal_changes: As maxdoys_decadal_changes but for the
+                                  temperature crop suitability score only
+    maxdoys_prec_decadal_changes: As maxdoys_decadal_changes but for the
+                                  precipitation crop suitability score only
     """
 
     # mask land-cover and soil
@@ -584,7 +690,8 @@ def calc_decadal_doy_changes(
         os.path.join(outdir, cropname + "_max_precscore_doys_decades.nc")
     )
 
-    # calculate the decadal changes from the 2020s, using modulo (circular) arithmetic
+    # calculate the decadal changes from the first decade,
+    # using modulo (circular) arithmetic
     maxdoys_decadal_changes = maxdoys_decades.copy()[1:, :, :]
     maxdoys_temp_decadal_changes = maxdoys_temp_decades.copy()[1:, :, :]
     maxdoys_prec_decadal_changes = maxdoys_prec_decades.copy()[1:, :, :]
@@ -650,7 +757,28 @@ def calc_decadal_kprop_changes(
     ktmpap, kmaxap, SOIL, LCMloc, sgmloc, cropname, outdir
 ):
     """
-    Calculate decadal changes in the average proportion of ktmp & kmax days
+    Calculate decadal changes in the gtime-average proportion of
+    ktmp & kmax days for each month
+
+
+    Inputs
+    ------
+    ktmpap: Xarray dataarray from containing the gtime-average proportion of
+            days within each gtime that are below the crop KTMP, for each day
+            and gridcell
+    kmaxap: As ktmpap but for above the crop KMAX (TMAX)
+    SOIL: Soil group suitability string from the ecocrop database
+    LCMloc: Land cover mask. Path to tif
+    sgmloc: Soil group mask netcdfs folder as string
+    outdir: Where to store output netcdf files
+    cropname: For output filenames
+
+    Outputs
+    -------
+    ktmpap_monavg_climo_diffs: An xarray dataarray containing the
+                               difference between the decadally averaged
+                               monthly averaged ktmpap and the first decade
+    kmaxap_monavg_climo_diffs: As ktmpap_monavg_climo_diffs but for kmaxap
     """
 
     # Calculate monthly average
@@ -783,6 +911,25 @@ def calc_decadal_kprop_changes(
 
 
 def plot_decade(allscore, tempscore, precscore, save=None):
+    """
+    Plot a given decade's allscore, tempscore and precscore
+
+    Inputs
+    ------
+    allscore : xarray dataarray/set
+        A given decade's gridded crop suitability score.
+    tempscore : xarray dataarray/set
+        A given decade's gridded temperature suitability score.
+    precscore : xarray dataarray/set
+        A given decade's gridded precipitation suitability score.
+    save : boolean, optional
+        Controls whether or not the plot is saved to disk. The default is None.
+
+    Returns
+    -------
+    None.
+
+    """
     fig, axs = plt.subplots(1, 3, subplot_kw={"projection": cp.crs.OSGB()})
     fig.set_figwidth(10)
     ax1 = axs[0]
@@ -818,6 +965,32 @@ def plot_decade(allscore, tempscore, precscore, save=None):
 def plot_decadal_changes(
     dcdata, save=None, cmin=None, cmax=None, revcolbar=None
 ):
+    """
+    Produce a plot of the decadally averaged crop suitability score data
+    for a given crop. Produces a 1x3 plot of the first, third and fifth
+    decades respectively.
+
+    Inputs
+    ------
+    dcdata : xarray dataarray/set
+        A given crop's decadally averaged gridded suitability score.
+    save : boolean, optional
+        Controls whether or not the plot is saved to disk. The default is None.
+    cmin : boolean, optional
+        Minimum value of the colourbar to use when plotting. The default is
+        None, which automatically sets the colourbar values
+    cmax : boolean, optional
+        Maximum value of the colourbar to use when plotting. The default is
+        None, which automatically sets the colourbar values
+    revcolbar : boolean, optional
+        Controls which way around the blue,white,red colourbar runs. The
+        default is None which used the 'bwr_r' matplotlib colourbar.
+
+    Returns
+    -------
+    None.
+
+    """
     if not cmax:
         cmax2 = np.ceil(dcdata.max().values)
         if cmax2 not in (0.0, 1.0):
@@ -891,6 +1064,33 @@ def plot_decadal_changes(
 def plot_degC_changes(
     dcdata, savedir=None, cmin=None, cmax=None, revcolbar=None
 ):
+    """
+    Produce a plot of the degC differences in the crop suitability score
+    data for a given crop. Produces a 1x3 plot of the 2C, 3C and 4C
+    differences from baseline respectively.
+
+    Inputs
+    ------
+    dcdata : xarray dataarray/set
+        A given crop's degC differenced gridded suitability score.
+    save : boolean, optional
+        Controls whether or not the plot is saved to disk. The default is None.
+    cmin : boolean, optional
+        Minimum value of the colourbar to use when plotting. The default is
+        None, which automatically sets the colourbar values
+    cmax : boolean, optional
+        Maximum value of the colourbar to use when plotting. The default is
+        None, which automatically sets the colourbar values
+    revcolbar : boolean, optional
+        Controls which way around the blue,white,red colourbar runs. The
+        default is None which used the 'bwr_r' matplotlib colourbar.
+
+    Returns
+    -------
+    None.
+
+    """
+
     if not cmax:
         cmax2 = np.ceil(dcdata.max().values)
         if cmax2 not in (0.0, 1.0):
@@ -958,10 +1158,28 @@ def plot_degC_changes(
         plt.close()
 
 
-# Clever function that does a forward rolling sum without loops
-# see https://stackoverflow.com/questions/14313510/how-to-calculate-rolling-moving-average-using-numpy-scipy
-# can't be used with numba as it doesn't support cumsum on n-d arrays
 def frs3D(ind, window, dtype):
+    """
+    Clever function that does a forward rolling sum without loops
+    see https://stackoverflow.com/questions/14313510/how-to-calculate-rolling-moving-average-using-numpy-scipy
+    can't be used with numba as it doesn't support cumsum on n-d arrays
+
+
+    Parameters
+    ----------
+    ind : array-like
+        3-dimensional array over which to calculate the rolling sum.
+    window : int
+        The window size to use for the rolling sum.
+    dtype : np.dtype
+        The dtype to output the result as.
+
+    Returns
+    -------
+    ret : array-like
+        3-dimensional array, the result of the forward rolling sum over ind.
+
+    """
     inds = np.cumsum(ind, axis=0, dtype=dtype)
     tmp = inds[window:, ...] - inds[:-window, ...]
     tmp2 = inds[window - 1, ...]
@@ -969,22 +1187,37 @@ def frs3D(ind, window, dtype):
     return ret
 
 
-# same function, without the initial step
 def frs3Dwcs(ind, window):
+    """
+    As frs3D, but without the initial step
+    """
     tmp = ind[window:, ...] - ind[:-window, ...]
     tmp2 = ind[window - 1, ...]
     ret = np.concatenate([tmp2[None, ...], tmp], axis=0)
     return ret
 
 
-def add_glen_dim(ds):
-    glen = ds.encoding["source"].split(".")[0].split("_")[-1]
-    ds = ds.expand_dims({"glen": [int(glen)]})
-    return ds
-
-
 # @njit(parallel=True)
 def score_temp(gtime, gmin, gmax):
+    """
+    Function to calculate the temperature suitability score for a given crop
+    for the 'annual' method.
+
+    Parameters
+    ----------
+    gtime : int
+        The growing season length under consideration.
+    gmin : int
+        The minimum growing season length of the crop.
+    gmax : int
+        The maximum growing season length of the crop.
+
+    Returns
+    -------
+    uint8
+        The temperature suitability score.
+
+    """
     score = 100 * (1 - ((gtime - gmin) / (gmax - gmin)))
     return np.round(score).astype("uint8")
 
@@ -998,6 +1231,29 @@ def score_temp(gtime, gmin, gmax):
 
 
 def score_temp2(temp, tmin, tmax, topmin, topmax):
+    """
+    Calculate the temperature suitability of a given day in the driving dataset
+    for a given crop, between 0 and 1.
+
+    Parameters
+    ----------
+    temp : array-lkike
+        The 3D temperature dataset.
+    tmin : int
+        The minimum suitable temperature for the crop.
+    tmax : int
+        The maximum suitable temperature for the crop.
+    topmin : int
+        The minimum optimum temperature for the crop.
+    topmax : int
+        The maximum optimum temperature for the crop.
+
+    Returns
+    -------
+    array-like, float16
+        The temperature suitability for each day and grid cell between 0 and 1.
+
+    """
     tmin = tmin.astype("float32")
     tmax = tmax.astype("float32")
     topmin = topmin.astype("float32")
@@ -1018,6 +1274,7 @@ def score_temp2(temp, tmin, tmax, topmin, topmax):
     return score.astype("float16")
 
 
+# Not used currently
 def score_temp3(avgt, tmin, tmax, topmin, topmax):
     tmin = tmin.astype("float32")
     tmax = tmax.astype("float32")
@@ -1042,6 +1299,30 @@ def score_temp3(avgt, tmin, tmax, topmin, topmax):
 
 
 def score_temp4(avgt, tmin, tmax, topmin, topmax):
+    """
+    Function to calculate the temperature suitability score for a given crop
+    for the 'perennial' method.
+
+    Parameters
+    ----------
+    avgt : array-like
+        The average temperature over the growing season length in question,
+        starting on each day and for each gridcell
+    tmin : int
+        The minimum suitable temperature for the crop.
+    tmax : int
+        The maximum suitable temperature for the crop.
+    topmin : int
+        The minimum optimum temperature for the crop.
+    topmax : int
+        The maximum optimum temperature for the crop.
+
+    Returns
+    -------
+    uint8
+        The temperature suitability score.
+
+    """
     tmin = tmin.astype("float32")
     tmax = tmax.astype("float32")
     topmin = topmin.astype("float32")
@@ -1063,6 +1344,30 @@ def score_temp4(avgt, tmin, tmax, topmin, topmax):
 
 
 def score_prec1(total, pmin, pmax, popmin, popmax):
+    """
+    Method 1 for scoring the precipitation suitability of a given crop.
+    Not recommended.
+
+    Parameters
+    ----------
+    total : array-like
+        The precipitation totals for the growing season length in question, for
+        each day and gridcell. 3D array.
+    pmin : int or float
+        The minimum suitable precipitation for the crop.
+    pmax : int or float
+        The maximum suitable precipitation for the crop.
+    popmin : int or float
+        The minimum optimum precipitation for the crop.
+    popmax : int or float
+        The maximum optimum precipitation for the crop.
+
+    Returns
+    -------
+    array-like, dtype uint8
+        The precipitation score for each day and grid cell.
+
+    """
     pmin = pmin.astype("float32")
     pmax = pmax.astype("float32")
     popmin = popmin.astype("float32")
@@ -1086,6 +1391,30 @@ def score_prec1(total, pmin, pmax, popmin, popmax):
 
 
 def score_prec2(total, pmin, pmax, popmin, popmax):
+    """
+    Method 2 for scoring the precipitation suitability of a given crop.
+    The recommended method.
+
+    Parameters
+    ----------
+    total : array-like
+        The precipitation totals for the growing season length in question, for
+        each day and gridcell. 3D array.
+    pmin : int or float
+        The minimum suitable precipitation for the crop.
+    pmax : int or float
+        The maximum suitable precipitation for the crop.
+    popmin : int or float
+        The minimum optimum precipitation for the crop.
+    popmax : int or float
+        The maximum optimum precipitation for the crop.
+
+    Returns
+    -------
+    array-like, dtype uint8
+        The precipitation score for each day and grid cell.
+
+    """
     pmin = pmin.astype("float32")
     pmax = pmax.astype("float32")
     popmin = popmin.astype("float32")
@@ -1107,6 +1436,30 @@ def score_prec2(total, pmin, pmax, popmin, popmax):
 
 
 def score_prec3(total, pmin, pmax, popmin, popmax):
+    """
+    Method 3 for scoring the precipitation suitability of a given crop.
+    Not recommended.
+
+    Parameters
+    ----------
+    total : array-like
+        The precipitation totals for the growing season length in question, for
+        each day and gridcell. 3D array.
+    pmin : int or float
+        The minimum suitable precipitation for the crop.
+    pmax : int or float
+        The maximum suitable precipitation for the crop.
+    popmin : int or float
+        The minimum optimum precipitation for the crop.
+    popmax : int or float
+        The maximum optimum precipitation for the crop.
+
+    Returns
+    -------
+    array-like, dtype uint8
+        The precipitation score for each day and grid cell.
+
+    """
     pmin = pmin.astype("float32")
     pmax = pmax.astype("float32")
     popmin = popmin.astype("float32")
@@ -1133,388 +1486,3 @@ def score_prec3(total, pmin, pmax, popmin, popmax):
         ),
     )
     return score.round().astype("uint8")
-
-
-def factors(n):
-    """
-    Function to calculate factors of a number from stackoverflow:
-    https://stackoverflow.com/questions/6800193/what-is-the-most-efficient-way-of-finding-all-the-factors-of-a-number-in-python
-    """
-
-    return set(
-        factor
-        for i in range(1, int(n**0.5) + 1)
-        if n % i == 0
-        for factor in (i, n // i)
-    )
-
-
-def time_chunk_calc(window, tlen):
-    """
-    Calculate the optimal time dimension chunksize for dask for a given rolling window size.
-    This has to be greater than or equal to half the rolling window size and also be
-    a factor of the total time dimension length (i.e. divide into it with no remainder).
-    The 'optimal' time dimension chunksize is the factor nearest to half the rolling window size.
-
-    Inputs:
-    window - Rolling window size
-    tlen   - Total length of time dimension
-
-    Outputs:
-    Optimal chunk size.
-    """
-
-    minlen = int(np.floor(window / 2.0))
-    lenfactors = list(factors(tlen))
-    lenfactors.sort()
-
-    for factor in lenfactors:
-        if factor >= minlen:
-            optimal = factor
-            break
-        else:
-            continue
-
-    if optimal == tlen:
-        print(
-            "There is no factor of dataset time dimension ("
-            + str(tlen)
-            + ") that is "
-            + "greater than half the rolling window size ("
-            + str(minlen)
-            + "), "
-            + "checking for chunksizes with a remainder greater than "
-            + str(minlen)
-        )
-
-        for cs in range(minlen, tlen - minlen):
-            remainder = tlen % cs
-            if remainder >= minlen:
-                optimal = cs
-                break
-            else:
-                continue
-
-        if remainder == tlen - minlen - 1:
-            print(
-                "Still no possible chunksize, no chunking will be carried out, may lead to memory issues."
-            )
-
-    print(
-        "Rolling window size is "
-        + str(window)
-        + " --> minimum dask chunksize is "
-        + str(minlen)
-    )
-    print(
-        "Time dimension length is "
-        + str(tlen)
-        + ", nearest possible chunksize equal to or above "
-        + str(minlen)
-        + " is "
-        + str(optimal)
-    )
-    print("Time chunksize will therefore be set to " + str(optimal))
-
-    return optimal
-
-
-def read_grd_file(filen, mask=0):
-    vals = np.loadtxt(filen, skiprows=6)
-    if mask == 1:
-        vals = np.ma.masked_values(vals, 0)
-        vals = np.ma.masked_values(vals, -9999.0)
-        # preserve the mask whilst setting masked values to nans
-        vals.data[np.where(vals.data == 0)] = np.nan
-        vals.data[np.where(vals.data == -9999.0)] = np.nan
-    return vals
-
-
-def read_nc(filen, var):
-    ncf = nc4.Dataset(filen, "r")  # open and read from netcdf file
-    data = ncf.variables[var][:]  # variable
-    x = ncf.variables["x"][:]  # easting
-    y = ncf.variables["y"][:]  # northing
-    if len(data.shape) >= 3:  # time
-        t = ncf.variables["t"][:]
-        tunits = ncf.variables["t"].units
-    else:
-        t = None
-        tunits = None
-    ncf.close()  # close netcdf file
-    return data, x, y, t, tunits
-
-
-def get_coords(filein):
-    filen = open(filein, "r")
-    ncols = int(filen.readline().split()[1])
-    nrows = int(filen.readline().split()[1])
-    xllc = float(filen.readline().split()[1])
-    yllc = float(filen.readline().split()[1])
-    res = float(filen.readline().split()[1])
-    nodata = float(filen.readline().split()[1])
-    filen.close()
-    return nrows, ncols, xllc, yllc, res, nodata
-
-
-def make_xarray(filein, xdimname="x", ydimname="y"):
-    nrows, ncols, xllc, yllc, res, nodata = get_coords(filein)
-    xcoords = np.linspace(
-        xllc + (res / 2), xllc + (res / 2) + (res * (ncols - 1)), ncols
-    )
-    ycoords = np.linspace(
-        yllc + (res / 2), yllc + (res / 2) + (res * (nrows - 1)), nrows
-    )[::-1]
-    vals = np.loadtxt(filein, skiprows=6)
-    vals = xr.DataArray(
-        vals, coords=[(ydimname, ycoords), (xdimname, xcoords)]
-    )
-    vals = vals.where(vals != nodata)
-    return vals, xcoords, ycoords, nodata
-
-
-def nctoxr(filein, var):
-    data, x, y = read_nc(filein, var)
-    dataxr = xr.DataArray(data, coords=[("y", y), ("x", x)])
-    return dataxr
-
-
-def subset_to_template(filein, template):
-    tvals, xcoords_template, ycoords_template, nodata = make_xarray(template)
-    tvalsnp = tvals.values.copy()
-    vals, xcoords, ycoords, nodata = make_xarray(filein)
-    subvals = vals.sel(
-        y=slice(ycoords_template[0], ycoords_template[-1]),
-        x=slice(xcoords_template[0], xcoords_template[-1]),
-    )
-    newxcoords = subvals.coords["x"].values
-    newycoords = subvals.coords["y"].values
-    return subvals, newxcoords, newycoords, nodata
-
-
-def grd_to_netcdf_single(
-    filein,
-    varname,
-    units,
-    filesave=1,
-    filenameout="grd.ncf",
-    subset=0,
-    template=None,
-):
-    if subset == 1:
-        vals, junk1, junk2, nodata = subset_to_template(filein, template)
-    else:
-        vals, junk, junk2, nodata = make_xarray(filein)
-    vals.name = varname
-    vals.attrs = {"Units": units, "missing_value": nodata}
-    vals.coords["x"].attrs = {
-        "long_name": "easting",
-        "standard_name": "projection_x_coordinate",
-        "units": "m",
-        "point_spacing": "even",
-        "axis": "x",
-    }
-    vals.coords["y"].attrs = {
-        "long_name": "northing",
-        "standard_name": "projection_y_coordinate",
-        "units": "m",
-        "point_spacing": "even",
-        "axis": "y",
-    }
-
-    if filesave == 1:
-        vals.to_netcdf(filenameout)
-    else:
-        return vals, nodata
-
-
-# NOT USED
-def inddaycalc(
-    metdata,
-    ecocrop,
-    index,
-    comparison,
-    gyear,
-    yeardata=0,
-    saveloc=".",
-    x="projection_x_coordinate",
-    y="projection_y_coordinate",
-    t="time",
-):
-    """
-    Calculate the number of days an index in the ecocrop spreadsheet exceeds,is less than,equals
-    the relevant metdata.
-    Inputs:
-    metdata: Xarray dataset containing the metdata for the comparison. Dimensions: [time,y,x]
-    ecocrop: The ecocrop spreadsheet as a pandas DataFrame, containing the index, and 'ScientificName' cols
-    index: The name of the index for the comparison, must be one of the col names in ecocrop
-    comparison: The type of comparison to do. Choose from:
-                'greater', 'greater_or_equal', 'equal', 'less_or_equal', 'less'.
-    gyear: 1 or 0. Choose whether or not to use the growing year or calendar year for the comparison
-           Using the growing year requires the 'GMAX', 'GMIN' and 'GLEN' columns to be in ecocrop
-           Ignored if yeardata==1
-    yeardata: 1 or 0. Set whether of not the metdata is yearly (1) or daily (0)
-    saveloc: Directory to save the resulting netcdf file
-    x: X coordinate name of the metdata. Defaults to 'projection_x_coordinate'
-    y: Y coordinate name of the metdata. Defaults to 'projection_y_coordinate'
-    t: t coordinate name of the metdata. Defaults to 'time'
-
-    Outputs:
-    inds: Xarray dataset with one variable per plant of dimensions [year,y,x] containing the sum total
-          of days per year in which the condition was met. This will also be saved to disk in saveloc
-          with name INDEXdays.nc where INDEX is replaced with the index var used in the comparison.
-    """
-
-    if yeardata == 0:
-        # determine number of whole calendar years
-        for tt in range(0, len(metdata[t])):
-            times = metdata[t].values
-            mon = times[tt].month
-            day = times[tt].day
-            if mon == 1 and day == 1:
-                sind = tt
-                break
-
-        for tt in range(0, len(metdata[t])):
-            times = metdata[t].values[::-1]
-            mon = times[tt].month
-            day = times[tt].day
-            if mon == 12 and day == 30:
-                eind = tt
-                break
-
-        startyear = metdata[t].values[sind].year
-        endyear = metdata[t].values[::-1][eind].year
-    else:
-        startyear = metdata[t][0].values
-        endyear = metdata[t][-1].values
-    nyears = endyear - startyear + 1
-
-    # create xarray to store results of comparison
-    plantarrs = {}
-    sns = []
-    years = np.arange(startyear, endyear + 1)
-    xs = metdata[x].values
-    ys = metdata[y].values
-    for row in range(0, ecocrop.shape[0]):
-        sn = ecocrop.loc[row, "ScientificName"]
-        sn = "_".join(sn.split(" "))
-        sns.append(sn)
-        if not np.isnan(ecocrop.loc[row, index]):
-            basearr = np.zeros((nyears - 1, len(ys), len(xs)))
-            plantarrs[sn] = xr.DataArray(
-                basearr, coords=[years[:-1], ys, xs], dims=["year", "y", "x"]
-            )
-    inds = xr.Dataset(plantarrs)
-
-    metdata = metdata.rename({t: "time"})
-    for year in range(startyear, endyear):
-        # Step 1: Trim down driving data to year in question,
-        # with an extra year on the end to account for cases where
-        # the growing season spans the year boundary.
-        if yeardata == 0:
-            metdata_year = metdata.sel(time=slice(str(year), str(year + 1)))
-        else:
-            metdata_year = metdata.sel(time=year)
-
-        for row in range(0, ecocrop.shape[0]):
-            plantdata = ecocrop.loc[row, :]
-            if not np.isnan(plantdata[index]):
-                sn = ecocrop.loc[row, "ScientificName"]
-                sn = "_".join(sn.split(" "))
-                print(
-                    "Calculating "
-                    + index
-                    + " inds for "
-                    + sn
-                    + " for "
-                    + str(year)
-                )
-
-                # Step 2: Create an array of zeros matching the shape of tempn_year.
-                # Where tempn is equal or below the killing temp, set to 1,
-                # otherwise leave as 0.
-                if comparison == "less_or_equal":
-                    tmparr = np.where(
-                        np.isnan(metdata_year.values),
-                        np.nan,
-                        np.where(
-                            metdata_year.values <= plantdata[index], 1, 0
-                        ),
-                    )
-                elif comparison == "less":
-                    tmparr = np.where(
-                        np.isnan(metdata_year.values),
-                        np.nan,
-                        np.where(metdata_year.values < plantdata[index], 1, 0),
-                    )
-                elif comparison == "equal":
-                    tmparr = np.where(
-                        np.isnan(metdata_year.values),
-                        np.nan,
-                        np.where(
-                            metdata_year.values == plantdata[index], 1, 0
-                        ),
-                    )
-                elif comparison == "greater_or_equal":
-                    tmparr = np.where(
-                        np.isnan(metdata_year.values),
-                        np.nan,
-                        np.where(
-                            metdata_year.values >= plantdata[index], 1, 0
-                        ),
-                    )
-                elif comparison == "greater":
-                    tmparr = np.where(
-                        np.isnan(metdata_year.values),
-                        np.nan,
-                        np.where(metdata_year.values > plantdata[index], 1, 0),
-                    )
-
-                # Step 3: Sum up over the time dimension, from GMIN to GMAX
-                # If GMIN/GMAX NaN, assume growing season spans whole calendar year,
-                # Also if gyear!=1, use calendar year
-                if yeardata == 0:
-                    if gyear == 1:
-                        if np.isnan(plantdata["GMIN"]):
-                            gmin = 1
-                        else:
-                            gmin = int(plantdata["GMIN"])
-                        if np.isnan(plantdata["GMAX"]):
-                            gmax = 360
-                        else:
-                            gmax = int(plantdata["GMAX"])
-                        if gmin == 0 and gmax == 0:
-                            gmin = 1
-                            gmax = 360
-
-                        if gmax < gmin:
-                            gmax += 360
-                    else:
-                        gmin = 1
-                        gmax = 360
-
-                    tmpsum = tmparr[gmin - 1 : gmax].sum(axis=0)
-                else:
-                    tmpsum = tmparr
-
-                # plt.pcolormesh(tmpsum)
-                # plt.title(sn)
-                # display.display(plt.gcf())
-                # plt.close()
-
-                # Step 4: Store in existing xarray dataset
-                inds[sn].loc[dict(year=year)] = tmpsum
-
-    encoding = {
-        var: {"dtype": "int16", "_FillValue": -9999} for var in inds.data_vars
-    }
-    fullpath = os.path.join(saveloc, index + "days.nc")
-    if not os.path.exists(fullpath):
-        inds.to_netcdf(
-            os.path.join(saveloc, index + "days.nc"), encoding=encoding
-        )
-    else:
-        print("File already exists, not saving netcdf file")
-
-    return inds
