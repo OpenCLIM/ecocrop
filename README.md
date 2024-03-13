@@ -1,4 +1,4 @@
-# EcoCrop Climactic Crop Suitability Scoring
+# EcoCrop Climatic Crop Suitability Scoring
 
 MJB 14/7/23
 -----------
