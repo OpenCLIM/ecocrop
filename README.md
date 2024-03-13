@@ -35,7 +35,14 @@ A suitability score out of 100 is calculated for temperature and precip separate
 - A python environment with xarray and pandas is required. Other optional packages are matplotlib and cartopy is making use of the plotting scripts and dask if attempting to process more data than will fit in memory.
 
 # Installation
-The current recommended method for running the code is to first set up an anaconda or mamba environment with the required packages in. This can be done on Windows, Mac or Linux operating systems.
+The current recommended method for testing the code is to run the 'Binder' instance associated with the code, which automatically installs all the dependencies and allows you to run the code from your web browser. Access the Binder here, or by clicking the binder button at the top of this README. 
+
+Once the Binder environment has launched, open a terminal and run the testing script with the command `python ecocrop_testdata_run.py`. The code should run and produce suitability scores for the year 2020 over north Norfolk as a netcdf file and plot in the `outputs` folder.
+The plot of the netcdf file should look like this:
+**INSERT IMAGE**
+
+Alternatively, it is possible to download the code and set up the environment required to run it manually using anaconda:
+- First set up an anaconda or mamba environment with the required packages in. This can be done on Windows, Mac or Linux operating systems.
 - Installation instructions and downloads for each operating system can be found on the [Anaconda website](https://www.anaconda.com/download)
 - Download the EcoCrop repository to your local machine using `git clone https://github.com/OpenCLIM/ecocrop.git` or `git clone git@github.com:OpenCLIM/ecocrop.git` from the shell/terminal/commandline if git is installed, or `gh repo clone OpenCLIM/ecocrop` if you are on Windows and have the [Git Command Line client](https://cli.github.com/) installed. If git/Git CLI is not installed a zip file of the repository can be obtained from **LINK** zenodo.
 - Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`. replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell. 
