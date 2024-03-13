@@ -36,8 +36,8 @@ A suitability score out of 100 is calculated for temperature and precip separate
 
 # Installation
 The current recommended method for running the code is to first set up an anaconda or mamba environment with the required packages in. This can be done on Windows, Mac or Linux operating systems.
-- Installation instructions and downloads for each operating system can be found on the (Anaconda website)[https://www.anaconda.com/download]
-- Download the EcoCrop repository to your local machine using `git clone` if git is installed. **MORE DETAIL in prev sentence**. If git is not installed a zip file of the repository can be obtained from **LINK** zenodo.
+- Installation instructions and downloads for each operating system can be found on the [Anaconda website](https://www.anaconda.com/download)
+- Download the EcoCrop repository to your local machine using `git clone https://github.com/OpenCLIM/ecocrop.git` or `git clone git@github.com:OpenCLIM/ecocrop.git` from the shell/terminal/commandline if git is installed, or `gh repo clone OpenCLIM/ecocrop` if you are on Windows and have the [Git Command Line client](https://cli.github.com/) installed. If git/Git CLI is not installed a zip file of the repository can be obtained from **LINK** zenodo.
 - Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`. replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell. 
 - Once the environment is installed, activate it using **conda activate envname** and you are ready to go!
 
@@ -46,7 +46,7 @@ The current recommended method for running the code is to first set up an anacon
 A small dataset and script is provided for testing the code and checking it produces the expected outputs. The test script is set up to produce suitability scores for north Norfolk for 2020 for a wheat crop. 
 The test script is ecocrop_testdata_run.py and the test data is in the testdata folder. It can be run on Windows, Mac or Linux operating systems.
 Edits can be made to the variables at the start of the test script if necessary, but it is recommended to leave these as they are for the purposes of testing. 
-- Ensure the **envname** environment is active by running **conda activate envname** in the Anaconda Prompt or terminal/shell
+- Ensure the **envname** environment is active by running **conda activate envname** in the Anaconda Prompt (Windows) or terminal/shell (Mac/Linux)
 - Ensure you are in the directory containing all the repository files, including the test script. Use the 'cd' command in the prompt/terminal/shell to change directory. The current directory can be checked with the 'pwd' command and the files in the current directory can be viewed with 'ls'.
 - Run the test script with the command `python ecocrop_testdata_run.py`
 - There will be printouts on the screen displaying what the script is doing
