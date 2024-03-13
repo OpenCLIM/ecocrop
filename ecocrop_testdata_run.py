@@ -201,16 +201,10 @@ for gtime in allgtimes:
     ycoords_tas = tasy
     xcoords_tas = tasx
     if method == "annual":
-        toptdays = (
-            (frs3D(topt_crop, gtime, "float32")).round().astype("uint16")
-        )
+        toptdays = (frs3D(topt_crop, gtime, "float32")).round().astype("uint16")
     elif method == "perennial":
-        toptdays = (
-            (frs3D(tas, gtime, "float32") / gtime).round().astype("uint16")
-        )
-    toptdays = xr.DataArray(
-        toptdays, coords=[tcoords_tas, ycoords_tas, xcoords_tas]
-    )
+        toptdays = (frs3D(tas, gtime, "float32") / gtime).round().astype("uint16")
+    toptdays = xr.DataArray(toptdays, coords=[tcoords_tas, ycoords_tas, xcoords_tas])
     toptdays.name = "TOPT_days"
     if method == "annual":
         tscore = xr.where(toptdays >= GMIN, tscore1, np.uint8(0))
@@ -226,9 +220,7 @@ for gtime in allgtimes:
     ycoords_tmn = tmn["y"]
     xcoords_tmn = tmn["x"]
     ktmp_days = frs3D(ktmp_crop, gtime, "uint16")
-    ktmp_days = xr.DataArray(
-        ktmp_days, coords=[tcoords_tmn, ycoords_tmn, xcoords_tmn]
-    )
+    ktmp_days = xr.DataArray(ktmp_days, coords=[tcoords_tmn, ycoords_tmn, xcoords_tmn])
     ktmp_days.name = "KTMP_days"
     print("End: " + str(dt.datetime.now()))
 
@@ -241,9 +233,7 @@ for gtime in allgtimes:
     ycoords_tmx = tmx["y"]
     xcoords_tmx = tmx["x"]
     kmax_days = frs3D(kmax_crop, gtime, "uint16")
-    kmax_days = xr.DataArray(
-        kmax_days, coords=[tcoords_tmx, ycoords_tmx, xcoords_tmx]
-    )
+    kmax_days = xr.DataArray(kmax_days, coords=[tcoords_tmx, ycoords_tmx, xcoords_tmx])
     kmax_days.name = "KMAX_days"
     print("End: " + str(dt.datetime.now()))
 
@@ -273,9 +263,7 @@ for gtime in allgtimes:
     tempscore = xr.where(tempscore < 0, 0, tempscore).astype("uint8")
     print("End: " + str(dt.datetime.now()))
 
-    print(
-        "Calculating precip suitability score using method " + str(precmethod)
-    )
+    print("Calculating precip suitability score using method " + str(precmethod))
     print("Start: " + str(dt.datetime.now()))
     if precmethod == 1:
         precscore = score_prec1(precip_crop, PMIN, PMAX, POPMIN, POPMAX)
@@ -332,9 +320,7 @@ final_score_crop.encoding["contiguous"] = False
 final_score_crop.encoding["dtype"] = np.dtype("uint8")
 encoding = {}
 encoding["crop_suitability_score"] = final_score_crop.encoding
-final_score_crop.to_netcdf(
-    os.path.join(savedir, cropname + ".nc"), encoding=encoding
-)
+final_score_crop.to_netcdf(os.path.join(savedir, cropname + ".nc"), encoding=encoding)
 
 tempscore.name = "temperature_suitability_score"
 tempscore.encoding["zlib"] = True
@@ -344,9 +330,7 @@ tempscore.encoding["contiguous"] = False
 tempscore.encoding["dtype"] = np.dtype("uint8")
 encoding = {}
 encoding["temperature_suitability_score"] = tempscore.encoding
-tempscore.to_netcdf(
-    os.path.join(savedir, cropname + "_temp.nc"), encoding=encoding
-)
+tempscore.to_netcdf(os.path.join(savedir, cropname + "_temp.nc"), encoding=encoding)
 
 precscore.name = "precip_suitability_score"
 precscore.encoding["zlib"] = True
@@ -356,9 +340,7 @@ precscore.encoding["contiguous"] = False
 precscore.encoding["dtype"] = np.dtype("uint8")
 encoding = {}
 encoding["precip_suitability_score"] = precscore.encoding
-precscore.to_netcdf(
-    os.path.join(savedir, cropname + "_prec.nc"), encoding=encoding
-)
+precscore.to_netcdf(os.path.join(savedir, cropname + "_prec.nc"), encoding=encoding)
 
 # calculate yearly scores and decadal changes
 print("Calculating yearly scores")

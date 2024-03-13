@@ -5,7 +5,7 @@ MJB 14/7/23
 
 # Overview
 
-The Ecocrop suitability model assesses the changing climatic suitability of a variety of crops. Temperature and precipitation are assessed, so the suitability is for un-irrigated crops grown outside. Other impacts on suitability such as changing soils and the spread of pests or diseases are not accounted for. 
+The Ecocrop suitability model assesses the changing climatic suitability of a variety of crops. Temperature and precipitation are assessed, so the suitability is for un-irrigated crops grown outside. Other impacts on suitability such as changing soils and the spread of pests or diseases are not accounted for.
 
 The tool uses the following parameters from the EcoCrop database for the climate suitability calculation:
 - TOPMN,optimal minimum temperature
@@ -30,12 +30,12 @@ A suitability score out of 100 is calculated for temperature and precip separate
 
 - The full FAO EcoCrop database is provided as EcoCrop_DB.csv.
 - The code is currently set up to run on a trimmed-down version, EcoCrop_DB_secondtrim.csv
-- Daily values of average, minimum, maximum temperature are required, along with daily precipitation, all on a grid in netCDF format. 
+- Daily values of average, minimum, maximum temperature are required, along with daily precipitation, all on a grid in netCDF format.
 - Units of Kelvin and kg/m^2/s are expected
 - A python environment with xarray and pandas is required. Other optional packages are matplotlib and cartopy is making use of the plotting scripts and dask if attempting to process more data than will fit in memory.
 
 # Installation
-The current recommended method for testing the code is to run the 'Binder' instance associated with the code, which automatically installs all the dependencies and allows you to run the code from your web browser. Access the Binder here, or by clicking the binder button at the top of this README. 
+The current recommended method for testing the code is to run the 'Binder' instance associated with the code, which automatically installs all the dependencies and allows you to run the code from your web browser. Access the Binder here, or by clicking the binder button at the top of this README.
 
 Once the Binder environment has launched, open a terminal and run the testing script with the command `python ecocrop_testdata_run.py`. The code should run and produce suitability scores for the year 2020 over north Norfolk as a netcdf file and plot in the `outputs` folder.
 The plot of the netcdf file should look like this:
@@ -45,14 +45,14 @@ Alternatively, it is possible to download the code and set up the environment re
 - First set up an anaconda or mamba environment with the required packages in. This can be done on Windows, Mac or Linux operating systems.
 - Installation instructions and downloads for each operating system can be found on the [Anaconda website](https://www.anaconda.com/download)
 - Download the EcoCrop repository to your local machine using `git clone https://github.com/OpenCLIM/ecocrop.git` or `git clone git@github.com:OpenCLIM/ecocrop.git` from the shell/terminal/commandline if git is installed, or `gh repo clone OpenCLIM/ecocrop` if you are on Windows and have the [Git Command Line client](https://cli.github.com/) installed. If git/Git CLI is not installed a zip file of the repository can be obtained from **LINK** zenodo.
-- Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`. replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell. 
+- Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`. replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell.
 - Once the environment is installed, activate it using **conda activate envname** and you are ready to go!
 
 # Test running instructions
 
-A small dataset and script is provided for testing the code and checking it produces the expected outputs. The test script is set up to produce suitability scores for north Norfolk for 2020 for a wheat crop. 
+A small dataset and script is provided for testing the code and checking it produces the expected outputs. The test script is set up to produce suitability scores for north Norfolk for 2020 for a wheat crop.
 The test script is ecocrop_testdata_run.py and the test data is in the testdata folder. It can be run on Windows, Mac or Linux operating systems.
-Edits can be made to the variables at the start of the test script if necessary, but it is recommended to leave these as they are for the purposes of testing. 
+Edits can be made to the variables at the start of the test script if necessary, but it is recommended to leave these as they are for the purposes of testing.
 - Ensure the **envname** environment is active by running **conda activate envname** in the Anaconda Prompt (Windows) or terminal/shell (Mac/Linux)
 - Ensure you are in the directory containing all the repository files, including the test script. Use the 'cd' command in the prompt/terminal/shell to change directory. The current directory can be checked with the 'pwd' command and the files in the current directory can be viewed with 'ls'.
 - Run the test script with the command `python ecocrop_testdata_run.py`
@@ -62,7 +62,7 @@ Edits can be made to the variables at the start of the test script if necessary,
 # Full running instructions
 
 - This code is set up to run with the full 100-year daily and 1km resolution CHESS-SCAPE dataset, but can be run with any dataset that has daily precipitation and daily average/max/min temperature.
-- It is designed to run on a HPC due to the high memory requirements 
+- It is designed to run on a HPC due to the high memory requirements
 - An example of a SLURM job submit script is provided as ecocrop_lotus_himem_template.sbatch
 - This calls the main python script ecocrop_lotus_himem.py with the following arguments as inputs:
 - 'cropind': Replace this with the EcoCrop_DB_secondtrim.csv row number (0-based, ignoring header row) of the spreadsheet in the sbatch template.
@@ -77,7 +77,7 @@ Edits can be made to the variables at the start of the test script if necessary,
 - precname: Variable name of daily precipitation total in the input netcdf files
 - lcmloc: Location of the arable land mask (provided in the repo)
 - bgsloc: Location of the soil masks (provided in the repo)
-You can also edit the taspath, tmnpath, tmxpath, precpath to point to your netcdf files as needed, and the plotloc and saveloc for where output plots and netcdf files are to be stored. 
+You can also edit the taspath, tmnpath, tmxpath, precpath to point to your netcdf files as needed, and the plotloc and saveloc for where output plots and netcdf files are to be stored.
 
 
 # Method
@@ -102,13 +102,13 @@ $D= \frac{TMAX-T}{TMAX-TOPMX} \text{ when }TOPMX\lt T\lt TMAX$
 
 $D=0\text{ for all other }T$
 
-Where $T$ is the average temperature of the given day. A score of 1 represents a day that is maximally temperature suitable for the given crop, and 0 not suitable. 
+Where $T$ is the average temperature of the given day. A score of 1 represents a day that is maximally temperature suitable for the given crop, and 0 not suitable.
 
 Then a sum of $D$ across the subsequent $GTIME$ days is calculated:
 
 $$N_D=\sum_{days}^{GTIME}D$$
 
-This sum, $N_D$, is the total number of suitable days within $GTIME$. 
+This sum, $N_D$, is the total number of suitable days within $GTIME$.
 
 If $N_D$ is greater than or equal to $GMIN$, I.e. if at least the minimum number of suitable days is achieved within $GTIME$, then a suitability score $S_T$, dependent only on the given $GTIME$, is assigned to the given day:
 
@@ -136,7 +136,7 @@ The same heat and frost penalties as for the annual temperature suitability scor
 
 ## Precipitation Suitability Scoring Method
 
-The precipitation score is calculated in a similar way to the perennial temperature scoring method. The precipitation total ($PTOT$) is calculated over the $GTIME$ period then the following equation is used: 
+The precipitation score is calculated in a similar way to the perennial temperature scoring method. The precipitation total ($PTOT$) is calculated over the $GTIME$ period then the following equation is used:
 
 $S_P=\frac{100}{0.5\left(POPMX+POPMN\right)-PMIN}\left(PTOT-PMIN\right)\text{ where }PMIN\lt PTOT\lt 0.5\left(POPMX+POPMN\right)$
 
@@ -147,5 +147,5 @@ $S_P=0\text{ for all other }PTOT$
 # License information
 
 This code is available under the [terms of the Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
-By accessing or using this dataset, you agree to the [terms of the Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). 
+By accessing or using this dataset, you agree to the [terms of the Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
 Please cite this repository in any outputs produced from it.

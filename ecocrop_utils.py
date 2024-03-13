@@ -468,30 +468,18 @@ def calc_decadal_changes(
     nyears_u = int(np.floor(nyears / 10) * 10)
     for idx in range(0, nyears_u, 10):
         allscore_decade = allscore_years[idx : idx + 10, :, :].mean(dim="year")
-        tempscore_decade = tempscore_years[idx : idx + 10, :, :].mean(
-            dim="year"
-        )
-        precscore_decade = precscore_years[idx : idx + 10, :, :].mean(
-            dim="year"
-        )
+        tempscore_decade = tempscore_years[idx : idx + 10, :, :].mean(dim="year")
+        precscore_decade = precscore_years[idx : idx + 10, :, :].mean(dim="year")
 
-        allscore_decade = allscore_decade.expand_dims(
-            {"decade": [syear + idx]}
-        )
-        tempscore_decade = tempscore_decade.expand_dims(
-            {"decade": [syear + idx]}
-        )
-        precscore_decade = precscore_decade.expand_dims(
-            {"decade": [syear + idx]}
-        )
+        allscore_decade = allscore_decade.expand_dims({"decade": [syear + idx]})
+        tempscore_decade = tempscore_decade.expand_dims({"decade": [syear + idx]})
+        precscore_decade = precscore_decade.expand_dims({"decade": [syear + idx]})
 
         allscore_decades.append(allscore_decade)
         tempscore_decades.append(tempscore_decade)
         precscore_decades.append(precscore_decade)
     allscore_decades = xr.merge(allscore_decades)["crop_suitability_score"]
-    tempscore_decades = xr.merge(tempscore_decades)[
-        "temperature_suitability_score"
-    ]
+    tempscore_decades = xr.merge(tempscore_decades)["temperature_suitability_score"]
     precscore_decades = xr.merge(precscore_decades)["precip_suitability_score"]
 
     # compress and save to disk
@@ -635,9 +623,7 @@ def calc_decadal_doy_changes(
         encoding=encoding,
     )
 
-    maxdoys_prec.to_netcdf(
-        os.path.join(outdir, cropname + "_max_precscore_doys.nc")
-    )
+    maxdoys_prec.to_netcdf(os.path.join(outdir, cropname + "_max_precscore_doys.nc"))
     maxdoys_prec.encoding["zlib"] = True
     maxdoys_prec.encoding["complevel"] = 1
     maxdoys_prec.encoding["shuffle"] = False
@@ -665,12 +651,8 @@ def calc_decadal_doy_changes(
         maxdoys_temp_decade = circular_avg(maxdoys_temp_decade, "year")
         maxdoys_prec_decade = circular_avg(maxdoys_prec_decade, "year")
         maxdoys_decade = maxdoys_decade.expand_dims({"decade": [syear + idx]})
-        maxdoys_temp_decade = maxdoys_temp_decade.expand_dims(
-            {"decade": [syear + idx]}
-        )
-        maxdoys_prec_decade = maxdoys_prec_decade.expand_dims(
-            {"decade": [syear + idx]}
-        )
+        maxdoys_temp_decade = maxdoys_temp_decade.expand_dims({"decade": [syear + idx]})
+        maxdoys_prec_decade = maxdoys_prec_decade.expand_dims({"decade": [syear + idx]})
         maxdoys_decades.append(maxdoys_decade)
         maxdoys_temp_decades.append(maxdoys_temp_decade)
         maxdoys_prec_decades.append(maxdoys_prec_decade)
@@ -735,14 +717,10 @@ def calc_decadal_doy_changes(
         os.path.join(outdir, cropname + "_max_score_doys_decadal_changes.nc")
     )
     maxdoys_temp_decadal_changes.to_netcdf(
-        os.path.join(
-            outdir, cropname + "_max_tempscore_doys_decadal_changes.nc"
-        )
+        os.path.join(outdir, cropname + "_max_tempscore_doys_decadal_changes.nc")
     )
     maxdoys_prec_decadal_changes.to_netcdf(
-        os.path.join(
-            outdir, cropname + "_max_precscore_doys_decadal_changes.nc"
-        )
+        os.path.join(outdir, cropname + "_max_precscore_doys_decadal_changes.nc")
     )
     return (
         maxdoys_decadal_changes,
@@ -751,9 +729,7 @@ def calc_decadal_doy_changes(
     )
 
 
-def calc_decadal_kprop_changes(
-    ktmpap, kmaxap, SOIL, LCMloc, sgmloc, cropname, outdir
-):
+def calc_decadal_kprop_changes(ktmpap, kmaxap, SOIL, LCMloc, sgmloc, cropname, outdir):
     """
     Calculate decadal changes in the gtime-average proportion of
     ktmp & kmax days for each month
@@ -1013,9 +989,7 @@ def plot_decade(allscore, tempscore, precscore, save=None):
         plt.close()
 
 
-def plot_decadal_changes(
-    dcdata, save=None, cmin=None, cmax=None, revcolbar=None
-):
+def plot_decadal_changes(dcdata, save=None, cmin=None, cmax=None, revcolbar=None):
     """
     Produce a plot of the decadally averaged crop suitability score data
     for a given crop. Produces a 1x3 plot of the first, third and fifth
@@ -1112,9 +1086,7 @@ def plot_decadal_changes(
         plt.close()
 
 
-def plot_degC_changes(
-    dcdata, savedir=None, cmin=None, cmax=None, revcolbar=None
-):
+def plot_degC_changes(dcdata, savedir=None, cmin=None, cmax=None, revcolbar=None):
     """
     Produce a plot of the degC differences in the crop suitability score
     data for a given crop. Produces a 1x3 plot of the 2C, 3C and 4C
@@ -1190,15 +1162,9 @@ def plot_degC_changes(
     cbarax3.tick_params(axis="y", labelsize=7)
 
     cropname = str(dcdata.crop.values)
-    ax1.set_title(
-        "Suitability change for " + cropname + " at 2C", size="x-small"
-    )
-    ax2.set_title(
-        "Suitability change for " + cropname + " at 3C", size="x-small"
-    )
-    ax3.set_title(
-        "Suitability change for " + cropname + " at 4C", size="x-small"
-    )
+    ax1.set_title("Suitability change for " + cropname + " at 2C", size="x-small")
+    ax2.set_title("Suitability change for " + cropname + " at 3C", size="x-small")
+    ax3.set_title("Suitability change for " + cropname + " at 4C", size="x-small")
 
     if not savedir == None:
         if not os.path.exists(savedir):
@@ -1340,9 +1306,7 @@ def score_temp3(avgt, tmin, tmax, topmin, topmax):
             xr.where(
                 avgt > topmin,
                 1,
-                xr.where(
-                    avgt > tmin, (100 / (topmin - tmin)) * (avgt - tmin), 0
-                ),
+                xr.where(avgt > tmin, (100 / (topmin - tmin)) * (avgt - tmin), 0),
             ),
         ),
     )
@@ -1432,9 +1396,7 @@ def score_prec1(total, pmin, pmax, popmin, popmax):
             xr.where(
                 total > popmin,
                 100,
-                xr.where(
-                    total > pmin, (100 / (popmin - pmin)) * (total - pmin), 0
-                ),
+                xr.where(total > pmin, (100 / (popmin - pmin)) * (total - pmin), 0),
             ),
         ),
     )

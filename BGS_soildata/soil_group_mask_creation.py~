@@ -6,7 +6,7 @@ centre_points.crs = sm.crs
 smc = gpd.sjoin(sm, centre_points, how='right')
 smc = smc.drop('index_left', axis=1)
 
-smc = smc.drop(['ESB_DESC', 'CARB_CNTNT', 'PMM_GRAIN', 'SOIL_TEX', 'SOIL_DEPTH', 
+smc = smc.drop(['ESB_DESC', 'CARB_CNTNT', 'PMM_GRAIN', 'SOIL_TEX', 'SOIL_DEPTH',
                 'PMM1K_UID', 'VERSION'], axis=1)
 
 smc['HEAVY'] = 1
