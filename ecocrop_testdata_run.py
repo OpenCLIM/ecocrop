@@ -16,7 +16,7 @@ import numpy as np
 import datetime as dt
 import os
 
-cropind = 114  # wheat
+cropind = 117  # wheat
 rcp = "85"
 ensmem = "01"
 pf = ""
@@ -359,5 +359,5 @@ plot_year(
     allscore_years[0, :, :],
     tempscore_years[0, :, :],
     precscore_years[0, :, :],
-    save=os.path.join(plotdir, cropname + "_current_decade.png"),
+    save=os.path.join(plotdir, cropname + "_2020.png"),
 )
