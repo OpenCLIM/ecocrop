@@ -1,12 +1,80 @@
 import sys
-
-sys.path.insert(0, "/gws/nopw/j04/ceh_generic/matbro/ecocrop")
-from ecocrop_utils import *
+from ecocrop_utils import (
+    calc_yearly_scores_only,
+    frs3D,
+    score_temp,
+    score_temp2,
+    score_temp4,
+    score_prec1,
+    score_prec2,
+    score_prec3,
+    plot_year,
+)
 import pandas as pd
 import xarray as xr
 import numpy as np
 import datetime as dt
 import os
+
+#######################################################
+# Setup
+#######################################################
+"""
+Inputs:
+
+cropind: ------ integer
+                Index of ecocroploc to use. Determines the crop
+                that is run
+rcp: ---------- string
+                Relative Concentration Pathway version of the
+                driving meteorological data to use. Options are
+                "85" or "26". Determines the path to and
+                filenames of the driving data used. Only "85" is
+                available in the test script
+ensmem: ------- string
+                As rcp, but for the ensemble member. Options are
+                "01", "04", "06", "15". Only "01" is available in
+                the test script
+pf: ----------- string
+                "before", "after" or "". If the data spans
+                multiple years including 2020, "before" only runs
+                for years before 2020 and "after", after 2020.
+                "" runs all years. Only "" is available in the
+                test script
+ecocroploc: --- string
+                Path to EcoCrop csv database containing the crop
+                indices
+tasvname: ----- string
+                Variable name of the daily average temperature in
+                the meterological driving data
+prevname: ----- As tasvname but for daily precipitation totals
+tmnvname: ----- As tasvname but for daily minimum temperature
+tmxvname: ----- As tasvname but for daily maximum temperature
+lcmloc: ------- string
+                Path to land cover map file for masking
+bgsloc: ------- string
+                Path to soil texture maps for masking
+savedir: ------ string
+                Path to save netcdf outputs in
+plotdir: ------ string
+                Path to save output plots in
+yearaggmethod : string
+                Method to use to aggregate the daily scores
+                to yearly scores. Available options are
+                "mean", "max", "min", "percentile".
+                "percentile" is recommended and uses the
+                95th percentile.
+precmethod: --- integer
+                The method to use to calculate the
+                precipitation suitability score.
+                Available options 1, 2 or 3. 2 is recommended,
+                and used in the documented results
+verify: ------- integer
+                Switch to enable verfication of results against
+                existing files. Only available for wheat crop,
+                cropind 117, yearaggmethod "percentile",
+                precmethod 2.
+"""
 
 cropind = int(sys.argv[1])
 rcp = sys.argv[2]  # '85' or '26'
@@ -100,6 +168,13 @@ plotdir = (
 yearaggmethod = "percentile"
 precmethod = 2
 
+
+#######################################################
+# Main script
+#######################################################
+
+# Read in ecocrop database and select out indices for
+# the crop, and convert the units
 ecocropall = pd.read_csv(ecocroploc, engine="python")
 ecocrop = ecocropall.drop(["level_0"], axis=1)
 print("Cropind: " + str(cropind))
@@ -215,6 +290,9 @@ if method == "perennial":
     tas = tas.values
 print("End: " + str(dt.datetime.now()))
 
+# Calculate the days within the crop temperature range,
+# below the killing temperature and above the
+# maximum temperature
 print("Calculating topt_, ktmp_ and kmax_crop")
 print("Start: " + str(dt.datetime.now()))
 sys.stdout.flush()
@@ -225,6 +303,9 @@ kmax_crop = xr.where(tmx > KMAX, 1, 0).astype("uint16").values
 print("End: " + str(dt.datetime.now()))
 sys.stdout.flush()
 
+# Determine growing season lengths to assess
+# Intervals of 10 days are used to reduce
+# computational cost
 if GMAX - GMIN <= 15:
     gstart = np.int16(np.floor(GMIN / 10) * 10)
 else:
@@ -247,6 +328,7 @@ sys.stdout.flush()
 counter = 1
 GMIN = np.uint16(GMIN)
 GMAX = np.uint16(GMAX)
+# Loop over each growing season length
 for gtime in allgtimes:
     print(
         "Calculating suitability for "
@@ -258,11 +340,12 @@ for gtime in allgtimes:
     )
     print("Start: " + str(dt.datetime.now()))
 
+    # Calculate temperature suitability score
     print("Calculating T suitability")
     sys.stdout.flush()
     if method == "annual":
         tscore1 = score_temp(gtime, GMIN, GMAX).astype("uint8")
-    # calculate ndays of T in optimal range within gtime
+    # calculate ndays of T in optimal/suitable range within gtime
     tcoords_tas = tastime[: -gtime + 1]
     ycoords_tas = tasy
     xcoords_tas = tasx
@@ -335,6 +418,7 @@ for gtime in allgtimes:
     tempscore = xr.where(tempscore < 0, 0, tempscore).astype("uint8")
     print("End: " + str(dt.datetime.now()))
 
+    # Calculate precipitation suitability score
     print("Calculating precip suitability score using method " + str(precmethod))
     print("Start: " + str(dt.datetime.now()))
     sys.stdout.flush()
@@ -350,6 +434,8 @@ for gtime in allgtimes:
         )
     print("End: " + str(dt.datetime.now()))
 
+    # Always take the highest of the growing season scores as this
+    # is the growing season length the crop will likely grow in
     print("Updating T & P suitability scores for this gtime")
     print("Start: " + str(dt.datetime.now()))
     sys.stdout.flush()
@@ -378,6 +464,9 @@ for gtime in allgtimes:
         sys.stdout.flush()
     counter += 1
 
+# Combine the temperature and precipitation suitability scores
+# by taking the minimum, as this will likely be the
+# constraining factor on any crop growth
 print("Calculating final combined crop suitability score")
 print("Start: " + str(dt.datetime.now()))
 sys.stdout.flush()
@@ -401,6 +490,7 @@ print(ktmp_days_avg_prop)
 print(ktmp_days_avg_prop.dtype)
 print("End: " + str(dt.datetime.now()))
 
+# Save outputs to file
 print("Saving to netcdf")
 print("Start: " + str(dt.datetime.now()))
 sys.stdout.flush()
@@ -538,6 +628,7 @@ sys.stdout.flush()
 # plot_decadal_changes(allscore_decadal_changes, save=os.path.join(plotdir, cropname + '_decadal_changes.png'))
 # plot_decadal_changes(tempscore_decadal_changes, save=os.path.join(plotdir, cropname + '_tempscore_decadal_changes.png'))
 # plot_decadal_changes(precscore_decadal_changes, save=os.path.join(plotdir, cropname + '_precscore_decadal_changes.png'))
+# plot first decade's scores
 plot_decade(
     allscore_decades[0, :, :],
     tempscore_decades[0, :, :],

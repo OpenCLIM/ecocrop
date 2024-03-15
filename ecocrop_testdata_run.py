@@ -16,7 +16,67 @@ import numpy as np
 import datetime as dt
 import os
 
-cropind = 117  # wheat
+#######################################################
+# Setup
+#######################################################
+"""
+Inputs:
+
+cropind: ------ integer
+                Index of ecocroploc to use. Determines the crop
+                that is run
+rcp: ---------- string
+                Relative Concentration Pathway version of the
+                driving meteorological data to use. Options are
+                "85" or "26". Determines the path to and
+                filenames of the driving data used. Only "85" is
+                available in the test script
+ensmem: ------- string
+                As rcp, but for the ensemble member. Options are
+                "01", "04", "06", "15". Only "01" is available in
+                the test script
+pf: ----------- string
+                "before", "after" or "". If the data spans
+                multiple years including 2020, "before" only runs
+                for years before 2020 and "after", after 2020.
+                "" runs all years. Only "" is available in the
+                test script
+ecocroploc: --- string
+                Path to EcoCrop csv database containing the crop
+                indices
+tasvname: ----- string
+                Variable name of the daily average temperature in
+                the meterological driving data
+prevname: ----- As tasvname but for daily precipitation totals
+tmnvname: ----- As tasvname but for daily minimum temperature
+tmxvname: ----- As tasvname but for daily maximum temperature
+lcmloc: ------- string
+                Path to land cover map file for masking
+bgsloc: ------- string
+                Path to soil texture maps for masking
+savedir: ------ string
+                Path to save netcdf outputs in
+plotdir: ------ string
+                Path to save output plots in
+yearaggmethod : string
+                Method to use to aggregate the daily scores
+                to yearly scores. Available options are
+                "mean", "max", "min", "percentile".
+                "percentile" is recommended and uses the
+                95th percentile.
+precmethod: --- integer
+                The method to use to calculate the
+                precipitation suitability score.
+                Available options 1, 2 or 3. 2 is recommended,
+                and used in the documented results
+verify: ------- integer
+                Switch to enable verfication of results against
+                existing files. Only available for wheat crop,
+                cropind 117, yearaggmethod "percentile",
+                precmethod 2.
+"""
+
+cropind = 117
 rcp = "85"
 ensmem = "01"
 pf = ""
@@ -28,6 +88,11 @@ tmnvname = "tasmin"
 tmxvname = "tasmax"
 lcmloc = "./Mask_arable_LCM2015_UK.tif"
 bgsloc = "./EU_STM_soildata"
+savedir = "./testoutputs"
+plotdir = "./testoutputs"
+yearaggmethod = "percentile"
+precmethod = 2
+verify = 1
 
 taspath = (
     "./testdata/tas/chess-scape_rcp"
@@ -57,12 +122,13 @@ tmxpath = (
     + ensmem
     + "_tasmax_uk_1km_daily_????????-????????.nc"
 )
-savedir = "./testoutputs"
-plotdir = "./testoutputs"
 
-yearaggmethod = "percentile"
-precmethod = 2
+#######################################################
+# Main script
+#######################################################
 
+# Read in ecocrop database and select out indices for
+# the crop, and convert the units
 ecocropall = pd.read_csv(ecocroploc, engine="python")
 ecocrop = ecocropall.drop(["level_0"], axis=1)
 print("Cropind: " + str(cropind))
@@ -164,6 +230,9 @@ if method == "perennial":
     tas = tas.values
 print("End: " + str(dt.datetime.now()))
 
+# Calculate the days within the crop temperature range,
+# below the killing temperature and above the
+# maximum temperature
 print("Calculating topt_, ktmp_ and kmax_crop")
 print("Start: " + str(dt.datetime.now()))
 if method == "annual":
@@ -172,6 +241,9 @@ ktmp_crop = xr.where(tmn < KTMP, 1, 0).astype("uint16").values
 kmax_crop = xr.where(tmx > KMAX, 1, 0).astype("uint16").values
 print("End: " + str(dt.datetime.now()))
 
+# Determine growing season lengths to assess
+# Intervals of 10 days are used to reduce
+# computational cost
 if GMAX - GMIN <= 15:
     gstart = np.int16(np.floor(GMIN / 10) * 10)
 else:
@@ -182,6 +254,7 @@ allgtimes = list(np.arange(gstart, gend, 10, dtype="int16"))
 counter = 1
 GMIN = np.uint16(GMIN)
 GMAX = np.uint16(GMAX)
+# Loop over each growing season length
 for gtime in allgtimes:
     print(
         "Calculating suitability for "
@@ -193,10 +266,11 @@ for gtime in allgtimes:
     )
     print("Start: " + str(dt.datetime.now()))
 
+    # Calculate temperature suitability score
     print("Calculating T suitability")
     if method == "annual":
         tscore1 = score_temp(gtime, GMIN, GMAX).astype("uint8")
-    # calculate ndays of T in optimal range within gtime
+    # calculate ndays of T in optimal/suitable range within gtime
     tcoords_tas = tastime[: -gtime + 1]
     ycoords_tas = tasy
     xcoords_tas = tasx
@@ -237,10 +311,10 @@ for gtime in allgtimes:
     kmax_days.name = "KMAX_days"
     print("End: " + str(dt.datetime.now()))
 
+    # calculate total precipitation in gtime
     print("Calculating total precipitation")
     print("Start: " + str(dt.datetime.now()))
     sys.stdout.flush()
-    # calculate total precipitation in gtime
     tcoords_pre = pre["time"][: -gtime + 1]
     ycoords_pre = pre["y"]
     xcoords_pre = pre["x"]
@@ -263,6 +337,7 @@ for gtime in allgtimes:
     tempscore = xr.where(tempscore < 0, 0, tempscore).astype("uint8")
     print("End: " + str(dt.datetime.now()))
 
+    # Calculate precipitation suitability score
     print("Calculating precip suitability score using method " + str(precmethod))
     print("Start: " + str(dt.datetime.now()))
     if precmethod == 1:
@@ -277,6 +352,8 @@ for gtime in allgtimes:
         )
     print("End: " + str(dt.datetime.now()))
 
+    # Always take the highest of the growing season scores as this
+    # is the growing season length the crop will likely grow in
     print("Updating T & P suitability scores for this gtime")
     print("Start: " + str(dt.datetime.now()))
     if counter == 1:
@@ -303,15 +380,18 @@ for gtime in allgtimes:
         print("End: " + str(dt.datetime.now()))
     counter += 1
 
+# Combine the temperature and precipitation suitability scores
+# by taking the minimum, as this will likely be the
+# constraining factor on any crop growth
 print("Calculating final combined crop suitability score")
 print("Start: " + str(dt.datetime.now()))
 final_score_crop = xr.where(precscore < tempscore, precscore, tempscore)
 print(final_score_crop.dtype)
 print("End: " + str(dt.datetime.now()))
 
+# Save outputs to file
 print("Saving to netcdf")
 print("Start: " + str(dt.datetime.now()))
-# save to netcdf
 final_score_crop.name = "crop_suitability_score"
 final_score_crop.encoding["zlib"] = True
 final_score_crop.encoding["complevel"] = 1
@@ -342,7 +422,7 @@ encoding = {}
 encoding["precip_suitability_score"] = precscore.encoding
 precscore.to_netcdf(os.path.join(savedir, cropname + "_prec.nc"), encoding=encoding)
 
-# calculate yearly scores and decadal changes
+# calculate yearly scores
 print("Calculating yearly scores")
 (allscore_years, tempscore_years, precscore_years) = calc_yearly_scores_only(
     tempscore,
@@ -355,6 +435,30 @@ print("Calculating yearly scores")
     yearaggmethod,
 )
 
+# verify
+if verify == 1:
+    try:
+        testall = xr.open_dataarray(os.path.join(verifypath, cropname + "_years.nc"))
+        testtemp = xr.open_dataarray(
+            os.path.join(verifypath, cropname + "_tempscore_years.nc")
+        )
+        testprec = xr.open_dataarray(
+            os.path.join(verifypath, cropname + "_precscore_years.nc")
+        )
+        assert np.all(
+            testall == allscore_years.astype("uint8")
+        ), "Output is different to verified file"
+        assert np.all(
+            testtemp == tempscore_years.astype("uint8")
+        ), "Output is different to verified file"
+        assert np.all(
+            testprec == precscore_years.astype("uint8")
+        ), "Output is different to verified file"
+    except FileNotFoundError:
+        print("Verification files not available, not doing output verification")
+        continue
+
+# plot first year's scores
 plot_year(
     allscore_years[0, :, :],
     tempscore_years[0, :, :],
