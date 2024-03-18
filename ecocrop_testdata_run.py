@@ -74,6 +74,9 @@ verify: ------- integer
                 existing files. Only available for wheat crop,
                 cropind 117, yearaggmethod "percentile",
                 precmethod 2.
+verifypath ---- string
+                Path of folder containing files for verification
+                Only used in test version of script if verify==1
 """
 
 cropind = 117
@@ -93,6 +96,7 @@ plotdir = "./testoutputs"
 yearaggmethod = "percentile"
 precmethod = 2
 verify = 1
+verifypath = "./testoutputs/verification"
 
 taspath = (
     "./testdata/tas/chess-scape_rcp"
@@ -149,13 +153,20 @@ GMIN = int(testcrop["GMIN"])
 GMAX = int(testcrop["GMAX"])
 SOIL = testcrop["TEXT"]
 COMNAME = testcrop["COMNAME"]
-COMNAME = "_".join(COMNAME.split(",")[0].split(" "))
-if "(" in COMNAME:
-    COMNAME = "".join(COMNAME.split("("))
-    COMNAME = "".join(COMNAME.split(")"))
-if "'" in COMNAME:
-    COMNAME = "".join(COMNAME.split("'"))
-cropname = COMNAME
+FULLNAME = testcrop["ScientificName"]
+try:
+    COMNAME = "_".join(COMNAME.split(",")[0].split(" "))
+    if "(" in COMNAME:
+        COMNAME = "".join(COMNAME.split("("))
+        COMNAME = "".join(COMNAME.split(")"))
+    if "'" in COMNAME:
+        COMNAME = "".join(COMNAME.split("'"))
+    cropname = COMNAME
+except AttributeError:
+    FULLNAME = "_".join(FULLNAME.split(" "))
+    if "." in FULLNAME:
+        FULLNAME = "".join(FULLNAME.split("."))
+    cropname = FULLNAME
 
 # Check for missing data
 if np.isnan(testcrop["TOPMN"]):
@@ -456,7 +467,6 @@ if verify == 1:
         ), "Output is different to verified file"
     except FileNotFoundError:
         print("Verification files not available, not doing output verification")
-        continue
 
 # plot first year's scores
 plot_year(
