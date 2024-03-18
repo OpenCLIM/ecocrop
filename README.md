@@ -1,6 +1,8 @@
 # EcoCrop Climatic Crop Suitability Scoring
 
-MJB 14/7/23
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/OpenCLIM/ecocrop/HEAD?labpath=ecocrop_testrun_notebook.ipynb)
+
+MJB 18/3/24
 -----------
 
 # Overview
@@ -20,11 +22,11 @@ The tool uses the following parameters from the EcoCrop database for the climate
 - GMIN,Minimum crop cycle,the minimum number of 'growing days' the crop needs
 - GMAX,Maximum crop cycle,the maximum length of time the crop can grow in
 
-The following parameters are used, optionally, for additional masking of suitable locations for crop growth:
+The following parameters are used for additional masking of suitable locations for crop growth:
 - TEXT,Optimal soil texture
 - TEXTR,Absolute soil texture
 
-A suitability score out of 100 is calculated for temperature and precip separately, with the combined score the lower of these.
+A suitability score out of 100 is calculated for temperature and precip separately at each grid cell, with the combined score the gridpoint-wise lower of these.
 
 # Inputs and requirements
 
@@ -32,21 +34,22 @@ A suitability score out of 100 is calculated for temperature and precip separate
 - The code is currently set up to run on a trimmed-down version, EcoCrop_DB_secondtrim.csv
 - Daily values of average, minimum, maximum temperature are required, along with daily precipitation, all on a grid in netCDF format.
 - Units of Kelvin and kg/m^2/s are expected
-- A python environment with xarray and pandas is required. Other optional packages are matplotlib and cartopy is making use of the plotting scripts and dask if attempting to process more data than will fit in memory.
+- A python environment with xarray, rioxarray, dask, netcdf4, pandas, cartopy is required. An example environment.yml file is provided.
 
 # Installation
-The current recommended method for testing the code is to run the 'Binder' instance associated with the code, which automatically installs all the dependencies and allows you to run the code from your web browser. Access the Binder here, or by clicking the binder button at the top of this README.
+The current recommended method for testing the code is to run the 'Binder' instance associated with the code, which automatically installs all the dependencies and allows you to run the code in a notebook from your web browser. [Access the Binder here](https://mybinder.org/v2/gh/OpenCLIM/ecocrop/HEAD?labpath=ecocrop_testrun_notebook.ipynb), or by clicking the binder button at the top of this README.
 
-Once the Binder environment has launched, open a terminal and run the testing script with the command `python ecocrop_testdata_run.py`. The code should run and produce suitability scores for the year 2020 over north Norfolk as a netcdf file and plot in the `outputs` folder.
+Once the Binder environment and python notebook has launched, run the notebook using the 'Run' menu at the top of the webpage to select 'Run All Cells' or by clicking on the displayed code cell and pressing Shift+Enter. The code should run and produce suitability scores for the year 2020 over north Norfolk as netcdf files and an example plot in the `testoutputs` folder. The plot of the scores should display automatically when the notebook has completed running. Clicking the folder icon on the left-side vertical toolbar and navigating to the testoutputs folder will allow you to download the produced netcdf files (right click on a file and select 'Download' from the menu that appears), or you are welcome to use the notebook to view them yourself, no changes to the notebook will be saved to the repo.
 The plot of the netcdf file should look like this:
 **INSERT IMAGE**
+The script compares the output netcdf files against a pre-existing verification file within `testoutputs`, provided no parameters are changed within the `ecocrop_testdata_run.py` script. An error will be raised if the files do not match, unless a change to the parameters is detected. You are welcome to change the parameters and play around with the code to calculate the suitability for different crops, for example. 
 
 Alternatively, it is possible to download the code and set up the environment required to run it manually using anaconda:
 - First set up an anaconda or mamba environment with the required packages in. This can be done on Windows, Mac or Linux operating systems.
 - Installation instructions and downloads for each operating system can be found on the [Anaconda website](https://www.anaconda.com/download)
 - Download the EcoCrop repository to your local machine using `git clone https://github.com/OpenCLIM/ecocrop.git` or `git clone git@github.com:OpenCLIM/ecocrop.git` from the shell/terminal/commandline if git is installed, or `gh repo clone OpenCLIM/ecocrop` if you are on Windows and have the [Git Command Line client](https://cli.github.com/) installed. If git/Git CLI is not installed a zip file of the repository can be obtained from **LINK** zenodo.
 - Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`. replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell.
-- Once the environment is installed, activate it using **conda activate envname** and you are ready to go!
+- Once the environment is installed, activate it using `conda activate ecocroptest` and you are ready to go!
 
 # Test running instructions
 
