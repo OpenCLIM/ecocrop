@@ -46,6 +46,7 @@ The plot of the netcdf file should look like this:
 **INSERT IMAGE**
 The script compares the output netcdf files against a pre-existing verification file within `testoutputs`, provided no parameters are changed within the `ecocrop_testdata_run.py` script. An error will be raised if the files do not match, unless a change to the parameters is detected. You are welcome to change the parameters and play around with the code to calculate the suitability for different crops, for example. 
 
+### Using an Anaconda environment
 Alternatively, it is possible to download the code and set up the environment required to run it manually using anaconda:
 - First set up an anaconda or mamba environment with the required packages in. This can be done on Windows, Mac or Linux operating systems.
 - Installation instructions and downloads for each operating system can be found on the [Anaconda website](https://www.anaconda.com/download)
@@ -53,7 +54,6 @@ Alternatively, it is possible to download the code and set up the environment re
 - Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`. replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell.
 - Once the environment is installed, activate it using `conda activate ecocroptest` and you are ready to go!
 
-### Using an Anaconda environment
 A small dataset and script is provided for testing the code and checking it produces the expected outputs. The test script is set up to produce suitability scores for north Norfolk for 2020 for a wheat crop.
 The test script is ecocrop_testdata_run.py and the test data is in the testdata folder. It can be run on Windows, Mac or Linux operating systems.
 Edits can be made to the variables at the start of the test script if necessary, but it is recommended to leave these as they are for the purposes of testing.
