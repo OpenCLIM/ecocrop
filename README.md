@@ -36,7 +36,9 @@ A suitability score out of 100 is calculated for temperature and precip separate
 - Units of Kelvin and kg/m^2/s are expected
 - A python environment with xarray, rioxarray, dask, netcdf4, pandas, cartopy is required. An example environment.yml file is provided.
 
-# Installation
+# Installation and testing instructions
+
+### Using Binder
 The current recommended method for testing the code is to run the 'Binder' instance associated with the code, which automatically installs all the dependencies and allows you to run the code in a notebook from your web browser. [Access the Binder here](https://mybinder.org/v2/gh/OpenCLIM/ecocrop/HEAD?labpath=ecocrop_testrun_notebook.ipynb), or by clicking the binder button at the top of this README.
 
 Once the Binder environment and python notebook has launched, run the notebook using the 'Run' menu at the top of the webpage to select 'Run All Cells' or by clicking on the displayed code cell and pressing Shift+Enter. The code should run and produce suitability scores for the year 2020 over north Norfolk as netcdf files and an example plot in the `testoutputs` folder. The plot of the scores should display automatically when the notebook has completed running. Clicking the folder icon on the left-side vertical toolbar and navigating to the testoutputs folder will allow you to download the produced netcdf files (right click on a file and select 'Download' from the menu that appears), or you are welcome to use the notebook to view them yourself, no changes to the notebook will be saved to the repo.
@@ -51,8 +53,7 @@ Alternatively, it is possible to download the code and set up the environment re
 - Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`. replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell.
 - Once the environment is installed, activate it using `conda activate ecocroptest` and you are ready to go!
 
-# Test running instructions
-
+### Using an Anaconda environment
 A small dataset and script is provided for testing the code and checking it produces the expected outputs. The test script is set up to produce suitability scores for north Norfolk for 2020 for a wheat crop.
 The test script is ecocrop_testdata_run.py and the test data is in the testdata folder. It can be run on Windows, Mac or Linux operating systems.
 Edits can be made to the variables at the start of the test script if necessary, but it is recommended to leave these as they are for the purposes of testing.
