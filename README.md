@@ -2,12 +2,12 @@
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/OpenCLIM/ecocrop/HEAD?labpath=ecocrop_testrun_notebook.ipynb)
 
-MJB 18/3/24
+MJB 19/3/24
 -----------
 
 # Overview
 
-The Ecocrop suitability model assesses the changing climatic suitability of a variety of crops. Temperature and precipitation are assessed, so the suitability is for un-irrigated crops grown outside. Other impacts on suitability such as changing soils and the spread of pests or diseases are not accounted for.
+The Ecocrop suitability model assesses the changing climatic suitability of a variety of crops using the FAO EcoCrop database. Temperature and precipitation are assessed, so the suitability is for un-irrigated crops grown outside. Other impacts on suitability such as changing soils and the spread of pests or diseases are not accounted for.
 
 The tool uses the following parameters from the EcoCrop database for the climate suitability calculation:
 - TOPMN,optimal minimum temperature
@@ -38,30 +38,31 @@ A suitability score out of 100 is calculated for temperature and precip separate
 
 # Installation and testing instructions
 
+A small dataset and script is provided for testing the code and checking it produces the expected outputs. The test script is set up to produce suitability scores for north Norfolk for 2020 for a wheat crop. The test script is ecocrop_testdata_run.py and the test data is in the testdata folder. The recommended way to run it is using the Binder instance associated with this repo, but it can also be run on Windows, Mac or Linux operating systems.
+
 ### Using Binder
 The current recommended method for testing the code is to run the 'Binder' instance associated with the code, which automatically installs all the dependencies and allows you to run the code in a notebook from your web browser. [Access the Binder here](https://mybinder.org/v2/gh/OpenCLIM/ecocrop/HEAD?labpath=ecocrop_testrun_notebook.ipynb), or by clicking the binder button at the top of this README.
 
-Once the Binder environment and python notebook has launched, run the notebook using the 'Run' menu at the top of the webpage to select 'Run All Cells' or by clicking on the displayed code cell and pressing Shift+Enter. The code should run and produce suitability scores for the year 2020 over north Norfolk as netcdf files and an example plot in the `testoutputs` folder. The plot of the scores should display automatically when the notebook has completed running. Clicking the folder icon on the left-side vertical toolbar and navigating to the testoutputs folder will allow you to download the produced netcdf files (right click on a file and select 'Download' from the menu that appears), or you are welcome to use the notebook to view them yourself, no changes to the notebook will be saved to the repo.
-The plot of the netcdf file should look like this:
-**INSERT IMAGE**
-The script compares the output netcdf files against a pre-existing verification file within `testoutputs`, provided no parameters are changed within the `ecocrop_testdata_run.py` script. An error will be raised if the files do not match, unless a change to the parameters is detected. You are welcome to change the parameters and play around with the code to calculate the suitability for different crops, for example. 
+Once the Binder environment and python notebook has launched, run the notebook using the 'Run' menu at the top of the webpage to select 'Run All Cells' or by clicking on the displayed code cell and pressing Shift+Enter. The code should run and produce suitability scores for the year 2020 over north Norfolk as netcdf files and an example plot in the `testoutputs` folder. The plot of the scores should display automatically when the notebook has completed running. Clicking the folder icon on the left-side vertical toolbar and navigating to the testoutputs folder will allow you to download the produced netcdf files (right click on a file and select 'Download' from the menu that appears), or you are welcome to use the notebook to view them yourself, no changes you make to the notebook will be saved to the repo. You are welcome to change the parameters and play around with the code, for example to calculate the suitability for different crops. Again, no changes you make will be saved to the repo.
 
 ### Using an Anaconda environment
 Alternatively, it is possible to download the code and set up the environment required to run it manually using anaconda:
-- First set up an anaconda or mamba environment with the required packages in. This can be done on Windows, Mac or Linux operating systems.
+- First set up an anaconda environment with the required packages in. This can be done on Windows, Mac or Linux operating systems.
 - Installation instructions and downloads for each operating system can be found on the [Anaconda website](https://www.anaconda.com/download)
 - Download the EcoCrop repository to your local machine using `git clone https://github.com/OpenCLIM/ecocrop.git` or `git clone git@github.com:OpenCLIM/ecocrop.git` from the shell/terminal/commandline if git is installed, or `gh repo clone OpenCLIM/ecocrop` if you are on Windows and have the [Git Command Line client](https://cli.github.com/) installed. If git/Git CLI is not installed a zip file of the repository can be obtained from **LINK** zenodo.
-- Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`. replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell.
+- Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`, replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a Windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell.
 - Once the environment is installed, activate it using `conda activate ecocroptest` and you are ready to go!
 
-A small dataset and script is provided for testing the code and checking it produces the expected outputs. The test script is set up to produce suitability scores for north Norfolk for 2020 for a wheat crop.
-The test script is ecocrop_testdata_run.py and the test data is in the testdata folder. It can be run on Windows, Mac or Linux operating systems.
 Edits can be made to the variables at the start of the test script if necessary, but it is recommended to leave these as they are for the purposes of testing.
-- Ensure the **envname** environment is active by running **conda activate envname** in the Anaconda Prompt (Windows) or terminal/shell (Mac/Linux)
+- Ensure the ecocroptest environment is active by running `conda activate ecocroptest` in the Anaconda Prompt (Windows) or terminal/shell (Mac/Linux)
 - Ensure you are in the directory containing all the repository files, including the test script. Use the 'cd' command in the prompt/terminal/shell to change directory. The current directory can be checked with the 'pwd' command and the files in the current directory can be viewed with 'ls'.
 - Run the test script with the command `python ecocrop_testdata_run.py`
 - There will be printouts on the screen displaying what the script is doing
 - The suitability scores output from the script will be sent to the 'testoutputs' folder, along with an example plot.
+
+The plot of the netcdf file should look like this:
+**INSERT IMAGE**
+The script compares the output against a pre-existing verification file within `testoutputs`, provided no parameters are changed within the `ecocrop_testdata_run.py` script. An error will be raised if the files do not match, unless a change to the parameters is detected. 
 
 # Full running instructions
 
@@ -71,7 +72,7 @@ Edits can be made to the variables at the start of the test script if necessary,
 - This calls the main python script ecocrop_lotus_himem.py with the following arguments as inputs:
 - 'cropind': Replace this with the EcoCrop_DB_secondtrim.csv row number (0-based, ignoring header row) of the spreadsheet in the sbatch template.
 - 'rcp' and 'ensmem': variables are for the different RCP Scenarios and ensemble members of the CHESS-SCAPE dataset respectively. They only affect the input and output data directories.
-- 'pf': handles the fact that the CHESS-SCAPE dataset was originally split up into before and after 2020, to help with memory limits. Again though it only affects the input and output data dirs. Can be set to 'past' or 'future' or anything else to ignore it.
+- 'pf': handles the fact that the CHESS-SCAPE dataset was originally split up into before and after 2020, to help with memory limits. Again though it only affects the input and output data dirs. Can be set to 'past' or 'future', or anything else to ignore it.
 - 'method': The temperature scoring method as described below. Can be 'annual' or 'perennial'.
 - The following variables can be edited within the python script itself:
 - ecocroploc: The location of the ecocrop database (provided in the repo)
@@ -82,6 +83,8 @@ Edits can be made to the variables at the start of the test script if necessary,
 - lcmloc: Location of the arable land mask (provided in the repo)
 - bgsloc: Location of the soil masks (provided in the repo)
 You can also edit the taspath, tmnpath, tmxpath, precpath to point to your netcdf files as needed, and the plotloc and saveloc for where output plots and netcdf files are to be stored.
+
+The full version requires the same python environment as the test version, follow the instructions provided in the **Using an Anaconda environment** section to set this up. 
 
 
 # Method
@@ -147,6 +150,13 @@ $S_P=\frac{100}{0.5\left(POPMX+POPMN\right)-PMIN}\left(PTOT-PMIN\right)\text{ wh
 $S_P=\frac{100}{PMAX-0.5\left(POPMX+POPMN\right)}\left(PMAX-PTOT\right)\text{ where }PMAX\gt PTOT\gt 0.5\left(POPMX+POPMN\right)$
 
 $S_P=0\text{ for all other }PTOT$
+
+# Citation
+If you use this tutorial in your work, or it helped you, please cite this repository by using the 'Cite this repository' button on the [main repository page](https://github.com/NERC-CEH/object_store_tutorial/), to the right of the files, or the CITATION.cff file in the root of the repository. 
+
+# Disclaimer
+
+THIS REPOSITORY IS PROVIDED THE AUTHORS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS REPOSITORY, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # License information
 
