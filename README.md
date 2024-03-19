@@ -7,7 +7,7 @@ MJB 19/3/24
 
 # Overview
 
-The Ecocrop suitability model assesses the changing climatic suitability of a variety of crops using the FAO EcoCrop database. Temperature and precipitation are assessed, so the suitability is for un-irrigated crops grown outside. Other impacts on suitability such as changing soils and the spread of pests or diseases are not accounted for.
+The Ecocrop suitability model assesses the changing climatic suitability of a variety of crops using the [FAO EcoCrop database](https://gaez.fao.org/pages/ecocrop). Temperature and precipitation are assessed, so the suitability is for un-irrigated crops grown outside. Other impacts on suitability such as changing soils and the spread of pests or diseases are not accounted for.
 
 The tool uses the following parameters from the EcoCrop database for the climate suitability calculation:
 - TOPMN,optimal minimum temperature
@@ -26,7 +26,7 @@ The following parameters are used for additional masking of suitable locations f
 - TEXT,Optimal soil texture
 - TEXTR,Absolute soil texture
 
-A suitability score out of 100 is calculated for temperature and precip separately at each grid cell, with the combined score the gridpoint-wise lower of these.
+A suitability score out of 100 is calculated for temperature and precipitation separately at each grid cell, with the combined score the gridpoint-wise lower of these.
 
 # Inputs and requirements
 
@@ -35,10 +35,21 @@ A suitability score out of 100 is calculated for temperature and precip separate
 - Daily values of average, minimum, maximum temperature are required, along with daily precipitation, all on a grid in netCDF format.
 - Units of Kelvin and kg/m^2/s are expected
 - A python environment with xarray, rioxarray, dask, netcdf4, pandas, cartopy is required. An example environment.yml file is provided.
+- A mask for arable land (provided in this repo, derived from the [UKCEH Land Cover Map 2015](https://doi.org/10.5285/6c6c9203-7333-4d96-88ab-78925e7a4e73))
+- Masks for 'heavy', 'medium' and 'light' soil textures (provided in this repo, dervied from [BGS ESRI](https://www.bgs.ac.uk/download/esri-soil-parent-material-model-1km-resolution/))
 
 # Installation and testing instructions
 
 A small dataset and script is provided for testing the code and checking it produces the expected outputs. The test script is set up to produce suitability scores for north Norfolk for 2020 for a wheat crop. The test script is ecocrop_testdata_run.py and the test data is in the testdata folder. The recommended way to run it is using the Binder instance associated with this repo, but it can also be run on Windows, Mac or Linux operating systems.
+The script should output six netcdf files:
+- **wheat.nc**: The combined suitability score for each day and gridpoint in the test dataset
+- **wheat_temp.nc**: The temperature suitability score for each day and gridpoint in the test dataset
+- **wheat_prec.nc**: The precipitation suitability score for each day and gridpoint in the test dataset
+- **wheat_years.nc**: As wheat.nc but aggregated over the years in the test dataset
+- **wheat_tempscore_years.nc**: As wheat_temp.nc but aggregated over the years in the test dataset
+- **wheat_precscore_years.nc**: As wheat_prec.nc but aggregated over the years in the test dataset
+and one plot, png file:
+- **wheat_2020.png**: Plot of the aggregated score for 2020 for the combined, temperature and precipitation suitability scores
 
 ### Using Binder
 The current recommended method for testing the code is to run the 'Binder' instance associated with the code, which automatically installs all the dependencies and allows you to run the code in a notebook from your web browser. [Access the Binder here](https://mybinder.org/v2/gh/OpenCLIM/ecocrop/HEAD?labpath=ecocrop_testrun_notebook.ipynb), or by clicking the binder button at the top of this README.
@@ -60,16 +71,16 @@ Edits can be made to the variables at the start of the test script if necessary,
 - There will be printouts on the screen displaying what the script is doing
 - The suitability scores output from the script will be sent to the 'testoutputs' folder, along with an example plot.
 
-The plot of the netcdf file should look like this:
-**INSERT IMAGE**
-The script compares the output against a pre-existing verification file within `testoutputs`, provided no parameters are changed within the `ecocrop_testdata_run.py` script. An error will be raised if the files do not match, unless a change to the parameters is detected. 
+The output plot should look like this:
+![test ecocrop plot](testoutputs/verification/wheat_2020.png)
+The script compares the output against a pre-existing verification file within `testoutputs/verification`, provided no parameters are changed within the `ecocrop_testdata_run.py` script. An error will be raised if the files do not match, unless a change to the parameters is detected. 
 
 # Full running instructions
 
 - The full version of the code is set up to run with the 100-year daily and 1km resolution [CHESS-SCAPE dataset](https://dx.doi.org/10.5285/8194b416cbee482b89e0dfbe17c5786c), but can be run with any dataset that has daily precipitation and daily average/max/min temperature.
 - Note that the CHESS-SCAPE dataset is not provided in this repo due to it's size, but can be downloaded from the [CEDA Archive](https://dx.doi.org/10.5285/8194b416cbee482b89e0dfbe17c5786c)
 - The full version of the code is identical to the test version except that it is designed to run on a HPC due to the high memory requirements of running with such a large dataset
-- An example of a job submit script for a SLURM-based HPC system is provided as **ecocrop_lotus_himem_template.sbatch**
+- An example of a job submit script for a SLURM-based HPC system is provided as **ecocrop_lotus_himem_sbatch_template.sbatch**
 - This calls the main python script **ecocrop_lotus_himem.py** with the following arguments as inputs:
   - **cropind**: The EcoCrop_DB_secondtrim.csv row number (0-based, ignoring header row) of the spreadsheet in the sbatch template, corresponding to the crop you wish to model
   - **rcp** and **ensmem**: variables are for the different RCP Scenarios and ensemble members of the CHESS-SCAPE dataset respectively. They only affect the input and output data directories
@@ -85,7 +96,31 @@ The script compares the output against a pre-existing verification file within `
   - **bgsloc**: Location of the soil masks (provided in the repo)
 You can also edit the **taspath**, **tmnpath**, **tmxpath**, **precpath** to point to your netcdf files as needed, and the **plotloc** and **saveloc** for where output plots and netcdf files are to be stored.
 
-The full version requires the same python environment as the test version, follow the instructions provided in the **Using an Anaconda environment** section to set one up. 
+The outputs of the full version of the code are [as for the test version](https://github.com/OpenCLIM/ecocrop/blob/main/README.md#Installation-and-testing-instructions) with the addition of:
+- **cropname_decades.nc**: The combined suitability score for each gridcell aggregated over the decades in the driving dataset
+- **cropname_tempscore_decades.nc**: As cropname_decades.nc but for temperature suitability scores only
+- **cropname_precscore_decades.nc**: As cropname_decades.nc but for precipitation suitability scores only
+- **cropname_decadal_changes.nc**: The combined suitability score for each gridcell aggregated over the decades in the driving dataset
+- **cropname_tempscore_decadal_changes.nc**: As cropname_decades.nc but for temperature suitability scores only
+- **cropname_precscore_decadal_changes.nc**: As cropname_decades.nc but for precipitation suitability scores only
+- **cropname_ktmp_days_avg_prop.nc**: The proportion of days within the growing seasons that has a minimum temperature below KTMP, averaged across all the growing season lengths (gtimes) considered
+- **cropname_kmax_days_avg_prop.nc**: As cropname_ktmp_days_avg_prop.nc but for the maximum temperature above KMAX
+- **cropname_ktmpdaysavgprop_decades.nc**: The decadal climatology of cropname_ktmp_days_avg_prop.nc
+- **cropname_kmaxdaysavgprop_decades.nc**: The decadal climatology of cropname_kmax_days_avg_prop.nc
+- **cropname_ktmpdaysavgprop_decadal_changes.nc**: The decadal changes in cropname_ktmpdaysavgprop_decades.nc from the first decade
+- **cropname_kmaxdaysavgprop_decadal_changes.nc**: The decadal changes in cropname_kmaxdaysavgprop_decades.nc from the first decade
+- **cropname_max_score_doys.nc**: The day of year a particular gridpoint experiences it's maximum combined suitability score, for each year in the driving dataset
+- **cropname_max_tempscore_doys.nc**: As cropname_max_score_doys but for the temperature suitability score only
+- **cropname_max_precscore_doys.nc**: As cropname_max_score_doys but for the precipitation suitability score only
+- **cropname_max_score_doys_decades.nc**: Decadally-averaged (using modulo/circular arithmetic) cropname_max_score_doys.nc
+- **cropname_max_tempscore_doys_decades.nc**: Decadally-averaged (using modulo/circular arithmetic) cropname_max_tempscore_doys.nc
+- **cropname_max_precscore_doys_decades.nc**: Decadally-averaged (using modulo/circular arithmetic) cropname_max_precscore_doys.nc
+- **cropname_max_score_doys_decadal_changes.nc**: The decadal changes in cropname_max_score_doys_decades.nc from the first decade
+- **cropname_max_tempscore_doys_decadal_changes.nc**: The decadal changes in cropname_max_tempscore_doys_decades.nc from the first decade
+- **cropname_max_precscore_doys_decadal_changes.nc**: The decadal changes in cropname_max_precscore_doys_decades.nc from the first decade
+where **cropname** is the name of the crop being modelled, taken from the EcoCrop database. 
+
+The full version requires the same python environment as the test version, follow the instructions provided in the [Using an Anaconda environment](https://github.com/OpenCLIM/ecocrop/blob/main/README.md#Using-an-Anaconda-environment) section to set one up. 
 
 
 # Method
