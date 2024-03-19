@@ -66,30 +66,31 @@ The script compares the output against a pre-existing verification file within `
 
 # Full running instructions
 
-- This code is set up to run with the full 100-year daily and 1km resolution CHESS-SCAPE dataset, but can be run with any dataset that has daily precipitation and daily average/max/min temperature.
-- It is designed to run on a HPC due to the high memory requirements
-- An example of a SLURM job submit script is provided as ecocrop_lotus_himem_template.sbatch
-- This calls the main python script ecocrop_lotus_himem.py with the following arguments as inputs:
-- 'cropind': Replace this with the EcoCrop_DB_secondtrim.csv row number (0-based, ignoring header row) of the spreadsheet in the sbatch template.
-- 'rcp' and 'ensmem': variables are for the different RCP Scenarios and ensemble members of the CHESS-SCAPE dataset respectively. They only affect the input and output data directories.
-- 'pf': handles the fact that the CHESS-SCAPE dataset was originally split up into before and after 2020, to help with memory limits. Again though it only affects the input and output data dirs. Can be set to 'past' or 'future', or anything else to ignore it.
-- 'method': The temperature scoring method as described below. Can be 'annual' or 'perennial'.
+- The full version of the code is set up to run with the 100-year daily and 1km resolution [CHESS-SCAPE dataset](https://dx.doi.org/10.5285/8194b416cbee482b89e0dfbe17c5786c), but can be run with any dataset that has daily precipitation and daily average/max/min temperature.
+- Note that the CHESS-SCAPE dataset is not provided in this repo due to it's size, but can be downloaded from the [CEDA Archive](https://dx.doi.org/10.5285/8194b416cbee482b89e0dfbe17c5786c)
+- The full version of the code is identical to the test version except that it is designed to run on a HPC due to the high memory requirements of running with such a large dataset
+- An example of a job submit script for a SLURM-based HPC system is provided as **ecocrop_lotus_himem_template.sbatch**
+- This calls the main python script **ecocrop_lotus_himem.py** with the following arguments as inputs:
+  - **cropind**: The EcoCrop_DB_secondtrim.csv row number (0-based, ignoring header row) of the spreadsheet in the sbatch template, corresponding to the crop you wish to model
+  - **rcp** and **ensmem**: variables are for the different RCP Scenarios and ensemble members of the CHESS-SCAPE dataset respectively. They only affect the input and output data directories
+  - **pf**: handles the fact that the CHESS-SCAPE dataset was originally split up into before and after 2020, to help with memory limits. Again though it only affects the input and output data dirs. Can be set to 'past' or 'future', or anything else to ignore it, which is recommended
+  - **method**: The temperature scoring method as described below. Can be 'annual' or 'perennial'
 - The following variables can be edited within the python script itself:
-- ecocroploc: The location of the ecocrop database (provided in the repo)
-- tasvname: Variable name of daily average temperature in the input netcdf files
-- tmnvname: Variable name of daily minimum temperature in the input netcdf files
-- tmxvname: Variable name of daily maximum temperature in the input netcdf files
-- precname: Variable name of daily precipitation total in the input netcdf files
-- lcmloc: Location of the arable land mask (provided in the repo)
-- bgsloc: Location of the soil masks (provided in the repo)
-You can also edit the taspath, tmnpath, tmxpath, precpath to point to your netcdf files as needed, and the plotloc and saveloc for where output plots and netcdf files are to be stored.
+  - **ecocroploc**: The location of the ecocrop database (provided in the repo)
+  - **tasvname**: Variable name of daily average temperature in the input netcdf files
+  - **tmnvname**: Variable name of daily minimum temperature in the input netcdf files
+  - **tmxvname**: Variable name of daily maximum temperature in the input netcdf files
+  - **precname**: Variable name of daily precipitation total in the input netcdf files
+  - **lcmloc**: Location of the arable land mask (provided in the repo)
+  - **bgsloc**: Location of the soil masks (provided in the repo)
+You can also edit the **taspath**, **tmnpath**, **tmxpath**, **precpath** to point to your netcdf files as needed, and the **plotloc** and **saveloc** for where output plots and netcdf files are to be stored.
 
-The full version requires the same python environment as the test version, follow the instructions provided in the **Using an Anaconda environment** section to set this up. 
+The full version requires the same python environment as the test version, follow the instructions provided in the **Using an Anaconda environment** section to set one up. 
 
 
 # Method
 
-The ECOCROP suitability model derives a suitability score based on daily temperature and daily precipitation values, using information on the required and optimal temperature and precipitation ranges, and the number of days within which the crop must grow. The temperature and precipitation suitability score for a given crop is calculated for each day and grid square in the CHESS-SCAPE (or provided) dataset and a selection of possible growing times (GTIMEs) between GMIN and GMAX by looking forward in time by GTIME days and calculating the scores for this period. We chose GTIMEs at an interval of 10days from GMIN onwards to balance accuracy against computational cost. The scores for each GTIME are first aggregated by taking the maximum, then the scores for each day are aggregated to yearly scores by taking the 95th centile over each year. Using the 95th centile ensures that the aggregated annual score represents the best possible score derived from the optimal timing of crop growth and harvest, without being overly sensitive to anomalous single days with high scores (as would be the case if the maximum was used). The minimum of the two scores at each grid square is then taken to give an overall score, as the lowest score is likely to be the limiting factor in the crop’s growth.
+The ECOCROP suitability model derives a suitability score based on daily temperature and daily precipitation values, using information on the required and optimal temperature and precipitation ranges, and the number of days within which the crop must grow. The temperature and precipitation suitability score for a given crop is calculated for each day and grid square in the CHESS-SCAPE (or other provided) dataset and a selection of possible growing times (GTIMEs) between GMIN and GMAX by looking forward in time by GTIME days and calculating the scores for this period. We chose GTIMEs at an interval of 10days from GMIN onwards to balance accuracy against computational cost. The scores for each GTIME are first aggregated by taking the maximum, then the scores for each day are aggregated to yearly scores by taking the 95th centile over each year. Using the 95th centile ensures that the aggregated annual score represents the best possible score derived from the optimal timing of crop growth and harvest, without being overly sensitive to anomalous single days with high scores (as would be the case if the maximum was used). The minimum of the two scores at each grid square is then taken to give an overall score, as the lowest score is likely to be the limiting factor in the crop’s growth.
 
 ## Temperature Suitability Scoring Method
 
@@ -129,8 +130,8 @@ Heat stress and frost penalties are then applied to the suitability score to acc
 
 ### Perennial Scoring Method
 
-The temperature score for a given $GTIME$, each day, grid square and crop is calculated as follows:
-First, the average daily-average-temperature ($TAVG$) across $GTIME$ is calculated. Then the following equation is used to calculate the score, $S_T$:
+The temperature score for a given $GTIME$, day, grid square and crop is calculated as follows:
+First, the average daily-average-temperature ($TAVG$) across $GTIME$ days into the future is calculated. Then the following equation is used to calculate the score, $S_T$:
 
 $S_T=\frac{100}{0.5\left(TOPMX+TOPMN\right)-TMIN} \left(TAVG-TMIN\right)\text{ when } TMIN\lt TAVG\lt 0.5\left(TOPMX+TOPMN\right)$
 
@@ -152,7 +153,7 @@ $S_P=\frac{100}{PMAX-0.5\left(POPMX+POPMN\right)}\left(PMAX-PTOT\right)\text{ wh
 $S_P=0\text{ for all other }PTOT$
 
 # Citation
-If you use this tutorial in your work, or it helped you, please cite this repository by using the 'Cite this repository' button on the [main repository page](https://github.com/NERC-CEH/object_store_tutorial/), to the right of the files, or the CITATION.cff file in the root of the repository. 
+If you use this repository in your work, or it helped you, please cite this repository by using the 'Cite this repository' button on the [main repository page](https://github.com/OpenCLIM/ecocrop), to the right of the files, or the CITATION.cff file in the root of the repository. 
 
 # Disclaimer
 
