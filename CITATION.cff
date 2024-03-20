@@ -1,0 +1,48 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: EcoCrop Climatic Crop Suitability Scoring
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file (CITATION.cff)
+type: software
+authors:
+  - given-names: Matt James
+    family-names: Brown
+    email: matbro@ceh.ac.uk
+    affiliation: UKCEH
+    orcid: 'https://orcid.org/0000-0003-1127-0279'
+  - given-names: John
+    family-names: Redhead
+    email: johdhe@ceh.ac.uk
+    affiliation: UKCEH
+    orcid: 'https://orcid.org/0000-0002-2233-3848'
+  - given-names: Richard
+    family-names: Pywell
+    email: rfp@ceh.ac.uk
+    affiliation: UKCEH
+    orcid: 'https://orcid.org/0000-0001-6431-9959'
+  - given-names: Jeff
+    family-names: Price
+    email: Jeff.Price@uea.ac.uk
+    affiliation: UEA
+    orcid: 'https://orcid.org/0000-0002-7795-5628'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.10843625
+    description: Latest-version DOI
+repository-code: 'https://github.com/OpenCLIM/ecocrop'
+abstract: >-
+  The Ecocrop suitability model assesses the changing
+  climatic suitability of a variety of crops using the FAO
+  EcoCrop database. 
+keywords:
+  - ecocrop
+  - crop suitability
+  - climate suitability
+  - crops
+  - crop
+  - horizon scanning
+  - climate change
+license: OGL-UK-3.0
