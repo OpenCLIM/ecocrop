@@ -2,6 +2,8 @@
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/OpenCLIM/ecocrop/HEAD?labpath=ecocrop_testrun_notebook.ipynb)
 
+[![DOI](https://zenodo.org/badge/633033201.svg)](https://zenodo.org/doi/10.5281/zenodo.10843625)
+
 MJB 19/3/24
 -----------
 
@@ -60,7 +62,7 @@ Once the Binder environment and python notebook has launched, which can take a f
 Alternatively, it is possible to download the code and set up the environment required to run it manually using anaconda:
 - First set up an anaconda environment with the required packages in. This can be done on Windows, Mac or Linux operating systems.
 - Installation instructions and downloads for each operating system can be found on the [Anaconda website](https://www.anaconda.com/download). It should not take longer than an hour to install on most relatively modern computers.
-- Download the EcoCrop repository to your local machine using `git clone https://github.com/OpenCLIM/ecocrop.git` or `git clone git@github.com:OpenCLIM/ecocrop.git` from the shell/terminal/commandline if git is installed, or `gh repo clone OpenCLIM/ecocrop` if you are on Windows and have the [Git Command Line client](https://cli.github.com/) installed. If git/Git CLI is not installed a zip file of the repository can be obtained from **LINK** zenodo.
+- Download the EcoCrop repository to your local machine using `git clone https://github.com/OpenCLIM/ecocrop.git` or `git clone git@github.com:OpenCLIM/ecocrop.git` from the shell/terminal/commandline if git is installed, or `gh repo clone OpenCLIM/ecocrop` if you are on Windows and have the [Git Command Line client](https://cli.github.com/) installed. If git/Git CLI is not installed a zip file of the repository can be obtained from [zenodo](https://zenodo.org/doi/10.5281/zenodo.10843625) or the DOI button at the top of this README.
 - Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`, replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a Windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell. This should also not take longer than an hour to complete on most relatively modern computers. 
 - Once the environment is installed, activate it using `conda activate ecocroptest` and you are ready to go!
 
