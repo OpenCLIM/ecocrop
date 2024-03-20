@@ -82,8 +82,8 @@ The script compares the output against a pre-existing verification file within `
 - The full version of the code is set up to run with the 100-year daily and 1km resolution [CHESS-SCAPE dataset](https://dx.doi.org/10.5285/8194b416cbee482b89e0dfbe17c5786c), but can be run with any dataset that has daily precipitation and daily average/max/min temperature.
 - Note that the CHESS-SCAPE dataset is not provided in this repo due to it's size, but can be downloaded from the [CEDA Archive](https://dx.doi.org/10.5285/8194b416cbee482b89e0dfbe17c5786c)
 - The full version of the code is identical to the test version except that it is designed to run on a HPC due to the high memory requirements of running with such a large dataset
-- An example of a job submit script for a SLURM-based HPC system is provided as **ecocrop_lotus_himem_sbatch_template.sbatch**
-- This calls the main python script **ecocrop_lotus_himem.py** with the following arguments as inputs:
+- An example of a job submit script for a SLURM-based HPC system is provided as [ecocrop_lotus_himem_sbatch_template.sbatch](https://github.com/OpenCLIM/ecocrop/blob/main/ecocrop_lotus_himem_sbatch_template.sbatch)
+- This calls the main python script [ecocrop_lotus_himem.py](https://github.com/OpenCLIM/ecocrop/blob/main/ecocrop_lotus_himem.py) with the following arguments as inputs:
   - **cropind**: The EcoCrop_DB_secondtrim.csv row number (0-based, ignoring header row) of the spreadsheet in the sbatch template, corresponding to the crop you wish to model
   - **rcp** and **ensmem**: variables are for the different RCP Scenarios and ensemble members of the CHESS-SCAPE dataset respectively. They only affect the input and output data directories
   - **pf**: handles the fact that the CHESS-SCAPE dataset was originally split up into before and after 2020, to help with memory limits. Again though it only affects the input and output data dirs. Can be set to 'past' or 'future', or anything else to ignore it, which is recommended
