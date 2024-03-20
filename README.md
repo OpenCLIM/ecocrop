@@ -9,40 +9,21 @@ MJB 19/3/24
 
 # Overview
 
-The Ecocrop suitability model assesses the changing climatic suitability of a variety of crops using the [FAO EcoCrop database](https://gaez.fao.org/pages/ecocrop). Temperature and precipitation are assessed, so the suitability is for un-irrigated crops grown outside. Other impacts on suitability such as changing soils and the spread of pests or diseases are not accounted for.
-
-The tool uses the following parameters from the EcoCrop database for the climate suitability calculation:
-- TOPMN,optimal minimum temperature
-- TOPMX,optimal maximum temperature
-- TMIN,absolute minimum temperature
-- TMAX,absolute maximum temperature
-- KTMP,Killing temperature early growth
-- ROPMN,optimal minimum rainfall
-- ROPMX,optimal maximum rainfall
-- RMIN,absolute minimum rainfall
-- RMAX,absolute maximum rainfall
-- GMIN,Minimum crop cycle,the minimum number of 'growing days' the crop needs
-- GMAX,Maximum crop cycle,the maximum length of time the crop can grow in
-
-The following parameters are used for additional masking of suitable locations for crop growth:
-- TEXT,Optimal soil texture
-- TEXTR,Absolute soil texture
-
-A suitability score out of 100 is calculated for temperature and precipitation separately at each grid cell, with the combined score the gridpoint-wise lower of these.
+The Ecocrop suitability model assesses the changing climatic suitability of a variety of crops using the [FAO EcoCrop database](https://gaez.fao.org/pages/ecocrop) and driving climate model or meterological data. Temperature and precipitation are assessed, so the suitability reflects that for un-irrigated crops grown outside. Other impacts on suitability such as changing soils and the spread of pests or diseases are not accounted for. A suitability score out of 100 is calculated for temperature and precipitation separately at each grid cell, for each day within the driving climate dataset. The combined suitability score is the gridpoint-wise lower of these.
 
 # Inputs and requirements
 
-- The full FAO EcoCrop database is provided as EcoCrop_DB.csv.
+- The full [FAO EcoCrop database](https://gaez.fao.org/pages/ecocrop) is provided as EcoCrop_DB.csv.
 - The code is currently set up to run on a trimmed-down version, EcoCrop_DB_secondtrim.csv
 - Daily values of average, minimum, maximum temperature are required, along with daily precipitation, all on a grid in netCDF format.
 - Units of Kelvin and kg/m^2/s are expected
-- A python environment with xarray, rioxarray, dask, netcdf4, pandas, cartopy is required. An example environment.yml file is provided.
-- A mask for arable land (provided in this repo, derived from the [UKCEH Land Cover Map 2015](https://doi.org/10.5285/6c6c9203-7333-4d96-88ab-78925e7a4e73))
-- Masks for 'heavy', 'medium' and 'light' soil textures (provided in this repo, dervied from [BGS ESRI](https://www.bgs.ac.uk/download/esri-soil-parent-material-model-1km-resolution/))
+- A python environment with xarray, rioxarray, dask, netcdf4, pandas, cartopy is required. An example [environment.yml](https://github.com/OpenCLIM/ecocrop/blob/main/environment.yml) file is provided.
+- A mask for arable land ([provided in the repo](https://github.com/OpenCLIM/ecocrop/blob/main/Mask_arable_LCM2015_UK.tif), derived from the [UKCEH Land Cover Map 2015](https://doi.org/10.5285/6c6c9203-7333-4d96-88ab-78925e7a4e73))
+- Masks for 'heavy', 'medium' and 'light' soil textures ([provided in the repo](https://github.com/OpenCLIM/ecocrop/tree/main/EU_STM_soildata), dervied from [BGS ESRI](https://www.bgs.ac.uk/download/esri-soil-parent-material-model-1km-resolution/) for England, Scotland and Wales, and the [European Soil Data Map](https://esdac.jrc.ec.europa.eu/content/european-soil-database-v2-raster-library-1kmx1km) for Northern Ireland)
 
 # Installation and testing instructions
 
-A small dataset and script is provided for testing the code and checking it produces the expected outputs. The test script is set up to produce suitability scores for north Norfolk for 2020 for a wheat crop. The test script is ecocrop_testdata_run.py and the test data is in the testdata folder. The recommended way to run it is using the Binder instance associated with this repo, but it can also be run on Windows, Mac or Linux operating systems.
+A small dataset and script is provided for testing the code and checking it produces the expected outputs. The test script is set up to produce suitability scores for north Norfolk for 2020 for a wheat crop. The test script is [ecocrop_testdata_run.py](https://github.com/OpenCLIM/ecocrop/blob/main/ecocrop_testdata_run.py) and the test data is in the [testdata folder](https://github.com/OpenCLIM/ecocrop/tree/main/testdata). The recommended way to run it is using the Binder instance associated with this repo, but it can also be run on Windows, Mac or Linux operating systems.
 The script should output six netcdf files:
 - **wheat.nc**: The combined suitability score for each day and gridpoint in the test dataset
 - **wheat_temp.nc**: The temperature suitability score for each day and gridpoint in the test dataset
@@ -60,18 +41,17 @@ Once the Binder environment and python notebook has launched, which can take a f
 
 ### Using an Anaconda environment
 Alternatively, it is possible to download the code and set up the environment required to run it manually using anaconda:
-- First set up an anaconda environment with the required packages in. This can be done on Windows, Mac or Linux operating systems.
-- Installation instructions and downloads for each operating system can be found on the [Anaconda website](https://www.anaconda.com/download). It should not take longer than an hour to install on most relatively modern computers.
-- Download the EcoCrop repository to your local machine using `git clone https://github.com/OpenCLIM/ecocrop.git` or `git clone git@github.com:OpenCLIM/ecocrop.git` from the shell/terminal/commandline if git is installed, or `gh repo clone OpenCLIM/ecocrop` if you are on Windows and have the [Git Command Line client](https://cli.github.com/) installed. If git/Git CLI is not installed a zip file of the repository can be obtained from [zenodo](https://zenodo.org/doi/10.5281/zenodo.10843625) or the DOI button at the top of this README.
-- Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the environment.yml file provided in the EcoCrop repository by running `conda env create -f /path/to/environment.yml`, replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml file is if it has been moved. If on a Windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell. This should also not take longer than an hour to complete on most relatively modern computers. 
+- First set up an anaconda environment with the required packages in. This can be done on Windows, Mac or Linux operating systems. Installation instructions and downloads for each operating system can be found on the [Anaconda website](https://www.anaconda.com/download). It should not take longer than an hour to install on most relatively modern computers.
+- Download the EcoCrop repository to your local machine using `git clone https://github.com/OpenCLIM/ecocrop.git` or `git clone git@github.com:OpenCLIM/ecocrop.git` from the shell/terminal/commandline if git is installed, or `gh repo clone OpenCLIM/ecocrop` if you use the [Git Command Line client](https://cli.github.com/). If git/Git CLI is not installed a zip file of the repository can be obtained from [zenodo](https://zenodo.org/doi/10.5281/zenodo.10843625) or the DOI button at the top of this README.
+- Once anaconda is installed, create a separate environment containing only the packages necessary to run EcoCrop. The correct environment can be set up using the [environment.yml](https://github.com/OpenCLIM/ecocrop/blob/main/environment.yml) (Mac or Linux) or [environment_windows.yml](https://github.com/OpenCLIM/ecocrop/blob/main/environment_windows.yml) file (Windows) provided in the repository by running `conda env create -f /path/to/environment.yml`, replacing `/path/to/` with the full path of the directory/folder of the repository or where the environment.yml or environment_windows.yml file is if it has been moved. If on a Windows machine it is recommended to do this in the 'Anaconda Prompt' that is installed when you install Anaconda. For Mac or Linux users this can be done in the terminal/shell. This should also not take longer than an hour to complete on most relatively modern computers. 
 - Once the environment is installed, activate it using `conda activate ecocroptest` and you are ready to go!
 
 Edits can be made to the variables at the start of the test script if necessary, but it is recommended to leave these as they are for the purposes of testing.
 - Ensure the ecocroptest environment is active by running `conda activate ecocroptest` in the Anaconda Prompt (Windows) or terminal/shell (Mac/Linux)
-- Ensure you are in the directory containing all the repository files, including the test script. Use the 'cd' command in the prompt/terminal/shell to change directory. The current directory can be checked with the 'pwd' command and the files in the current directory can be viewed with 'ls'
+- Ensure you are in the directory containing all the repository files, including the test script. Use the `cd` command in the prompt/terminal/shell to change directory. The current directory can be checked with the `pwd` command and the files in the current directory can be viewed with `ls` (`dir` on Windows)
 - Run the test script with the command `python ecocrop_testdata_run.py`, it shouldn't take longer than a couple of minutes to run
 - There will be printouts on the screen displaying what the script is doing
-- The suitability scores output from the script will be sent to the 'testoutputs' folder, along with an example plot.
+- The suitability scores output from the script will be written to the 'testoutputs' folder, along with an example plot.
 
 The output plot should look like this:
 ![test ecocrop plot](testoutputs/verification/wheat_2020.png)
@@ -102,11 +82,11 @@ The outputs of the full version of the code are [as for the test version](https:
 - **cropname_decades.nc**: The combined suitability score for each gridcell aggregated over the decades in the driving dataset
 - **cropname_tempscore_decades.nc**: As cropname_decades.nc but for temperature suitability scores only
 - **cropname_precscore_decades.nc**: As cropname_decades.nc but for precipitation suitability scores only
-- **cropname_decadal_changes.nc**: The combined suitability score for each gridcell aggregated over the decades in the driving dataset
-- **cropname_tempscore_decadal_changes.nc**: As cropname_decades.nc but for temperature suitability scores only
-- **cropname_precscore_decadal_changes.nc**: As cropname_decades.nc but for precipitation suitability scores only
-- **cropname_ktmp_days_avg_prop.nc**: The proportion of days within the growing seasons that has a minimum temperature below KTMP, averaged across all the growing season lengths (gtimes) considered
-- **cropname_kmax_days_avg_prop.nc**: As cropname_ktmp_days_avg_prop.nc but for the maximum temperature above KMAX
+- **cropname_decadal_changes.nc**: The decadal changes in the combined suitability score from the first decade
+- **cropname_tempscore_decadal_changes.nc**: As cropname_decadal_changes.nc but for temperature suitability scores only
+- **cropname_precscore_decadal_changes.nc**: As cropname_decadal_changes.nc but for precipitation suitability scores only
+- **cropname_ktmp_days_avg_prop.nc**: The proportion of days within the growing season that has a minimum temperature below KTMP, averaged across all the growing season lengths (gtimes) considered
+- **cropname_kmax_days_avg_prop.nc**: As cropname_ktmp_days_avg_prop.nc but for the maximum temperature above TMAX
 - **cropname_ktmpdaysavgprop_decades.nc**: The decadal climatology of cropname_ktmp_days_avg_prop.nc
 - **cropname_kmaxdaysavgprop_decades.nc**: The decadal climatology of cropname_kmax_days_avg_prop.nc
 - **cropname_ktmpdaysavgprop_decadal_changes.nc**: The decadal changes in cropname_ktmpdaysavgprop_decades.nc from the first decade
@@ -126,8 +106,24 @@ The full version requires the same python environment as the test version, follo
 
 
 # Method
+The EcoCrop climatic suitability model uses the following parameters from the EcoCrop database for the climate suitability calculation:
+- **TOPMN**: optimal minimum temperature
+- **TOPMX**: optimal maximum temperature
+- **TMIN**: absolute minimum temperature
+- **TMAX**: absolute maximum temperature
+- **KTMP**: killing temperature early growth
+- **ROPMN**: optimal minimum rainfall
+- **ROPMX**: optimal maximum rainfall
+- **RMIN**: absolute minimum rainfall
+- **RMAX**: absolute maximum rainfall
+- **GMIN**: minimum crop cycle, the minimum number of 'growing days' the crop needs
+- **GMAX**: maximum crop cycle, the maximum length of time the crop can grow in
 
-The ECOCROP suitability model derives a suitability score based on daily temperature and daily precipitation values, using information on the required and optimal temperature and precipitation ranges, and the number of days within which the crop must grow. The temperature and precipitation suitability score for a given crop is calculated for each day and grid square in the CHESS-SCAPE (or other provided) dataset and a selection of possible growing times (GTIMEs) between GMIN and GMAX by looking forward in time by GTIME days and calculating the scores for this period. We chose GTIMEs at an interval of 10days from GMIN onwards to balance accuracy against computational cost. The scores for each GTIME are first aggregated by taking the maximum, then the scores for each day are aggregated to yearly scores by taking the 95th centile over each year. Using the 95th centile ensures that the aggregated annual score represents the best possible score derived from the optimal timing of crop growth and harvest, without being overly sensitive to anomalous single days with high scores (as would be the case if the maximum was used). The minimum of the two scores at each grid square is then taken to give an overall score, as the lowest score is likely to be the limiting factor in the crop’s growth.
+The following parameters are used for additional masking of suitable locations for crop growth:
+- **TEXT**: Optimal soil texture
+- **TEXTR**: Absolute soil texture
+
+The suitability score is calculated using information on the required and optimal temperature (TMIN, TMAX, TOPMN, TOPMX) and precipitation (RMIN, RMAX) ranges, and the number of days within which the crop must grow (GMIN, GMAX). The temperature and precipitation suitability score for a given crop is calculated for each day and grid square in the CHESS-SCAPE (or other provided) dataset and a selection of possible growing times (GTIMEs) between GMIN and GMAX by looking forward in time by GTIME days and calculating the scores for this period. We chose GTIMEs at an interval of 10days from GMIN to balance accuracy against computational cost. The scores for each GTIME are first aggregated by taking the maximum, then the scores for each day are aggregated to yearly scores by taking the 95th centile over each year. Using the 95th centile ensures that the aggregated annual score represents the best possible score derived from the optimal timing of crop growth and harvest, without being overly sensitive to anomalous single days with high scores (as would be the case if the maximum was used). The minimum of the two scores at each grid square is then taken to give an overall score, as the lowest score is likely to be the limiting factor in the crop’s growth.
 
 ## Temperature Suitability Scoring Method
 
