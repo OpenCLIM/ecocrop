@@ -13,8 +13,8 @@ The Ecocrop suitability model assesses the changing climatic suitability of a va
 
 # Inputs and requirements
 
-- The full [FAO EcoCrop database](https://gaez.fao.org/pages/ecocrop) is provided as EcoCrop_DB.csv.
-- The code is currently set up to run on a trimmed-down version, EcoCrop_DB_secondtrim.csv
+- The full [FAO EcoCrop database](https://gaez.fao.org/pages/ecocrop) is provided as [EcoCrop_DB.csv](https://github.com/OpenCLIM/ecocrop/blob/main/EcoCrop_DB.csv).
+- The code is currently set up to run on a trimmed-down version, [EcoCrop_DB_secondtrim.csv](https://github.com/OpenCLIM/ecocrop/blob/main/EcoCrop_DB_secondtrim.csv)
 - Daily values of average, minimum, maximum temperature are required, along with daily precipitation, all on a grid in netCDF format.
 - Units of Kelvin and kg/m^2/s are expected
 - A python environment with xarray, rioxarray, dask, netcdf4, pandas, cartopy is required. An example [environment.yml](https://github.com/OpenCLIM/ecocrop/blob/main/environment.yml) file is provided.
@@ -31,6 +31,7 @@ The script should output six netcdf files:
 - **wheat_years.nc**: As wheat.nc but aggregated over the years in the test dataset
 - **wheat_tempscore_years.nc**: As wheat_temp.nc but aggregated over the years in the test dataset
 - **wheat_precscore_years.nc**: As wheat_prec.nc but aggregated over the years in the test dataset
+
 and one plot, png file:
 - **wheat_2020.png**: Plot of the aggregated score for 2020 for the combined, temperature and precipitation suitability scores
 
@@ -111,7 +112,7 @@ The EcoCrop climatic suitability model uses the following parameters from the Ec
 - **TOPMX**: optimal maximum temperature
 - **TMIN**: absolute minimum temperature
 - **TMAX**: absolute maximum temperature
-- **KTMP**: killing temperature early growth
+- **KTMP**: killing temperature
 - **ROPMN**: optimal minimum rainfall
 - **ROPMX**: optimal maximum rainfall
 - **RMIN**: absolute minimum rainfall
@@ -123,7 +124,7 @@ The following parameters are used for additional masking of suitable locations f
 - **TEXT**: Optimal soil texture
 - **TEXTR**: Absolute soil texture
 
-The suitability score is calculated using information on the required and optimal temperature (TMIN, TMAX, TOPMN, TOPMX) and precipitation (RMIN, RMAX) ranges, and the number of days within which the crop must grow (GMIN, GMAX). The temperature and precipitation suitability score for a given crop is calculated for each day and grid square in the CHESS-SCAPE (or other provided) dataset and a selection of possible growing times (GTIMEs) between GMIN and GMAX by looking forward in time by GTIME days and calculating the scores for this period. We chose GTIMEs at an interval of 10days from GMIN to balance accuracy against computational cost. The scores for each GTIME are first aggregated by taking the maximum, then the scores for each day are aggregated to yearly scores by taking the 95th centile over each year. Using the 95th centile ensures that the aggregated annual score represents the best possible score derived from the optimal timing of crop growth and harvest, without being overly sensitive to anomalous single days with high scores (as would be the case if the maximum was used). The minimum of the two scores at each grid square is then taken to give an overall score, as the lowest score is likely to be the limiting factor in the crop’s growth.
+The suitability score is calculated using information on the required and optimal temperature (TMIN, TMAX, TOPMN, TOPMX) and precipitation (RMIN, RMAX, ROPMN, ROPMX) ranges, and the number of days within which the crop must grow (GMIN, GMAX). The temperature and precipitation suitability score for a given crop is calculated for each day and grid square in the CHESS-SCAPE (or other provided) dataset and a selection of possible growing times (GTIMEs) between GMIN and GMAX by looking forward in time by GTIME days and calculating the scores for this period. We chose GTIMEs at an interval of 10days from GMIN to balance accuracy against computational cost. The scores for each GTIME are first aggregated by taking the maximum, then the scores for each day are aggregated to yearly scores by taking the 95th centile over each year. Using the 95th centile ensures that the aggregated annual score represents the best possible score derived from the optimal timing of crop growth and harvest, without being overly sensitive to anomalous single days with high scores (as would be the case if the maximum was used). The minimum of the two scores at each grid square is then taken to give an overall score, as the lowest score is likely to be the limiting factor in the crop’s growth.
 
 ## Temperature Suitability Scoring Method
 
