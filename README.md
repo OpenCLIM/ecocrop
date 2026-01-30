@@ -4,6 +4,8 @@
 
 [![DOI](https://zenodo.org/badge/633033201.svg)](https://zenodo.org/doi/10.5281/zenodo.10843625)
 
+[Scientific Paper](https://doi.org/10.1002/cli2.70007)
+
 MJB 19/3/24
 -----------
 
